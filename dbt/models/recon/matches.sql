@@ -34,7 +34,7 @@ pairs as (
         sum(amount * (n_ledger - n_paired)) as rest_ledger,
         sum(amount * (n_platform - n_paired)) as rest_platform,
         bool_and(n_ledger = n_paired or n_paired > 0) as ledger_rest_repeats_paired,
-        bool_or(foreign_currency) as foreign_currency
+        bool_or(n_platform > n_paired and foreign_currency) as foreign_currency
     from amounts
     group by key, kind
 )

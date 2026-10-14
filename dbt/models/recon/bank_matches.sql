@@ -1,5 +1,6 @@
 -- Bank level (spec §5.3): by the payout id in the reference first, then by amount within the
--- window, and only when both sides have exactly one candidate. Difference = bank minus payout.
+-- window. Both methods require one candidate on each side; ambiguous references never fall back
+-- to amount matching. Difference = bank minus payout.
 with payouts as (
     select payout_id, paid_on, amount_payout as amount
     from {{ ref('payout_checks') }}
@@ -9,16 +10,22 @@ deposits as (
     from {{ ref('deposits') }}
     where booked_on between cast('{{ var("period_start") }}' as date) and cast('{{ var("statement_end") }}' as date)
 ),
-by_reference as (
+reference_candidates as (
     select p.payout_id, d.deposit_id
     from payouts as p
     join deposits as d on list_contains(regexp_extract_all(d.reference, '[A-Za-z0-9_-]+'), p.payout_id)
 ),
+by_reference as (
+    select payout_id, deposit_id
+    from reference_candidates
+    qualify count(*) over (partition by payout_id) = 1
+        and count(*) over (partition by deposit_id) = 1
+),
 payouts_left as (
-    select * from payouts where payout_id not in (select payout_id from by_reference)
+    select * from payouts where payout_id not in (select payout_id from reference_candidates)
 ),
 deposits_left as (
-    select * from deposits where deposit_id not in (select deposit_id from by_reference)
+    select * from deposits where deposit_id not in (select deposit_id from reference_candidates)
 ),
 candidates as (
     select p.payout_id, d.deposit_id
@@ -66,7 +73,8 @@ rows as (
         p.amount,
         cast(null as decimal(18, 2)),
         cast(null as date),
-        case when p.payout_id in (select payout_id from candidates) then 'ambiguous_deposit'
+        case when p.payout_id in (select payout_id from reference_candidates)
+                  or p.payout_id in (select payout_id from candidates) then 'ambiguous_deposit'
              else 'missing_deposit' end,
         -p.amount
     from payouts as p
@@ -79,7 +87,8 @@ rows as (
         cast(null as decimal(18, 2)),
         d.amount,
         d.booked_on,
-        case when d.deposit_id in (select deposit_id from candidates) then 'ambiguous_deposit'
+        case when d.deposit_id in (select deposit_id from reference_candidates)
+                  or d.deposit_id in (select deposit_id from candidates) then 'ambiguous_deposit'
              else 'unexpected_deposit' end,
         d.amount
     from deposits as d

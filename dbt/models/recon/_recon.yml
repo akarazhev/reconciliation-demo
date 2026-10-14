@@ -125,3 +125,41 @@ unit_tests:
       rows:
         - {key: po_1, cause: missing_deposit, difference: -100.00}
         - {key: po_10, cause: null, difference: 0.00}
+
+  - name: bank_matches_reference_ambiguity
+    description: Duplicate references and a reference with two payout IDs must not fall back to amount matching.
+    model: bank_matches
+    given:
+      - input: ref('payout_checks')
+        rows:
+          - {dataset: t, payout_id: po_dup, paid_on: 2026-09-03, amount_payout: 100.00, amount_lines: 100.00, difference: 0.00}
+          - {dataset: t, payout_id: po_left, paid_on: 2026-09-10, amount_payout: 200.00, amount_lines: 200.00, difference: 0.00}
+          - {dataset: t, payout_id: po_right, paid_on: 2026-09-10, amount_payout: 300.00, amount_lines: 300.00, difference: 0.00}
+      - input: ref('deposits')
+        rows:
+          - {dataset: t, deposit_id: BK-dup1, booked_on: 2026-09-04, amount: 100.00, currency: EUR, reference: STRIPE PAYOUT po_dup}
+          - {dataset: t, deposit_id: BK-dup2, booked_on: 2026-09-05, amount: 99.00, currency: EUR, reference: STRIPE PAYOUT po_dup}
+          - {dataset: t, deposit_id: BK-multi, booked_on: 2026-09-11, amount: 200.00, currency: EUR, reference: payouts po_left and po_right}
+    expect:
+      rows:
+        - {key: po_dup, cause: ambiguous_deposit, difference: -100.00}
+        - {key: po_left, cause: ambiguous_deposit, difference: -200.00}
+        - {key: po_right, cause: ambiguous_deposit, difference: -300.00}
+        - {key: BK-dup1, cause: ambiguous_deposit, difference: 100.00}
+        - {key: BK-dup2, cause: ambiguous_deposit, difference: 99.00}
+        - {key: BK-multi, cause: ambiguous_deposit, difference: 200.00}
+
+  - name: matches_paired_fx_does_not_label_domestic_remainder
+    model: matches
+    given:
+      - input: ref('ledger_lines')
+        rows:
+          - {dataset: t, entry_id: L1, key: A, kind: sale, amount: 100.00, currency: EUR, booked_on: 2026-09-10}
+          - {dataset: t, entry_id: L2, key: A, kind: sale, amount: 50.00, currency: EUR, booked_on: 2026-09-10}
+      - input: ref('platform_lines')
+        rows:
+          - {dataset: t, line_id: P1, payout_id: po_1, key: A, kind: sale, amount: 100.00, currency: EUR, occurred_on: 2026-09-10, customer_currency: USD}
+          - {dataset: t, line_id: P2, payout_id: po_1, key: A, kind: sale, amount: 40.00, currency: EUR, occurred_on: 2026-09-10, customer_currency: EUR}
+    expect:
+      rows:
+        - {key: A, kind: sale, rest_ledger: 50.00, rest_platform: 40.00, cause: amount_mismatch, difference: -10.00}
