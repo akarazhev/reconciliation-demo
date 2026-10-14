@@ -110,3 +110,18 @@ unit_tests:
       rows:
         - {discrepancy_id: "t|operation|amount_mismatch|EDIT|sale", effect: short, explanation: "Amounts differ; no other cause found. Digits transposed: likely a manual edit."}
         - {discrepancy_id: "t|bank|in_transit|po_9|payout", effect: timing, explanation: "September payout booked by the bank in October."}
+
+  - name: bank_matches_does_not_match_an_id_prefix
+    model: bank_matches
+    given:
+      - input: ref('payout_checks')
+        rows:
+          - {dataset: t, payout_id: po_1, paid_on: 2026-09-03, amount_payout: 100.00, amount_lines: 100.00, difference: 0.00}
+          - {dataset: t, payout_id: po_10, paid_on: 2026-09-03, amount_payout: 200.00, amount_lines: 200.00, difference: 0.00}
+      - input: ref('deposits')
+        rows:
+          - {dataset: t, deposit_id: BK-10, booked_on: 2026-09-04, amount: 200.00, currency: EUR, reference: STRIPE PAYOUT po_10}
+    expect:
+      rows:
+        - {key: po_1, cause: missing_deposit, difference: -100.00}
+        - {key: po_10, cause: null, difference: 0.00}

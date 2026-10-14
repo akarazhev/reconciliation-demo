@@ -15,9 +15,11 @@ lines as (
         case when map.kind is null
              then error('Unknown Stripe reporting_category: ' || items.reporting_category)
              else map.kind end as kind,
-        cast(case map.part when 'gross' then items.gross
+        cast(case when map.kind is null
+                  then error('Unknown Stripe reporting_category: ' || items.reporting_category)
+                  else case map.part when 'gross' then items.gross
                            when 'fee' then -items.fee
-                           else items.net end as decimal(18, 2)) as amount,
+                           else items.net end end as decimal(18, 2)) as amount,
         upper(items.currency) as currency,
         cast(items.created_utc as date) as occurred_on,
         upper(coalesce(items.customer_facing_currency, items.currency)) as customer_currency

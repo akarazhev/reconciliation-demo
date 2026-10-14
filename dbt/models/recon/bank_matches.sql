@@ -12,7 +12,7 @@ deposits as (
 by_reference as (
     select p.payout_id, d.deposit_id
     from payouts as p
-    join deposits as d on contains(d.reference, p.payout_id)
+    join deposits as d on list_contains(regexp_extract_all(d.reference, '[A-Za-z0-9_-]+'), p.payout_id)
 ),
 payouts_left as (
     select * from payouts where payout_id not in (select payout_id from by_reference)
