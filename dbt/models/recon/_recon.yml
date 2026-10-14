@@ -94,3 +94,19 @@ unit_tests:
         - {key: P-miss, cause: missing_deposit, difference: -500.00}
         - {key: P-oct, cause: in_transit, difference: -600.00}
         - {key: BK-x, cause: unexpected_deposit, difference: 77.00}
+  - name: discrepancies_explain_a_transposition_as_a_hypothesis
+    model: discrepancies
+    given:
+      - input: ref('matches')
+        rows:
+          - {dataset: t, key: EDIT, kind: sale, amount_ledger: 192.00, amount_platform: 129.00, rest_ledger: 192.00, rest_platform: 129.00, difference: -63.00, cause: amount_mismatch}
+          - {dataset: t, key: OK, kind: sale, amount_ledger: 10.00, amount_platform: 10.00, rest_ledger: 0.00, rest_platform: 0.00, difference: 0.00, cause: null}
+      - input: ref('payout_checks')
+        rows: []
+      - input: ref('bank_matches')
+        rows:
+          - {dataset: t, key: po_9, amount_payout: 600.00, amount_bank: 600.00, booked_on: 2026-10-01, cause: in_transit, difference: -600.00}
+    expect:
+      rows:
+        - {discrepancy_id: "t|operation|amount_mismatch|EDIT|sale", effect: short, explanation: "Amounts differ; no other cause found. Digits transposed: likely a manual edit."}
+        - {discrepancy_id: "t|bank|in_transit|po_9|payout", effect: timing, explanation: "September payout booked by the bank in October."}
