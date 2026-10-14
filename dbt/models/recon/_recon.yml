@@ -59,3 +59,38 @@ unit_tests:
         - {key: ONLYP, kind: sale, cause: missing_in_ledger, difference: 80.00}
         - {key: FX, kind: sale, cause: fx, difference: -1.84}
         - {key: EDIT, kind: sale, cause: amount_mismatch, difference: -63.00}
+  - name: bank_matches_rules
+    description: >
+      Reference match (po_ok), reference match with another amount (po_mismatch), unique amount match in
+      the window (P-uniq), two payouts with one amount in the window (P-amb1, P-amb2), no deposit
+      (P-miss), September payout booked in October (P-oct), deposit with no payout (BK-x).
+    model: bank_matches
+    given:
+      - input: ref('payout_checks')
+        rows:
+          - {dataset: t, payout_id: po_ok, paid_on: 2026-09-03, amount_payout: 100.00, amount_lines: 100.00, difference: 0.00}
+          - {dataset: t, payout_id: po_mismatch, paid_on: 2026-09-04, amount_payout: 200.00, amount_lines: 200.00, difference: 0.00}
+          - {dataset: t, payout_id: P-uniq, paid_on: 2026-09-10, amount_payout: 300.00, amount_lines: 300.00, difference: 0.00}
+          - {dataset: t, payout_id: P-amb1, paid_on: 2026-09-15, amount_payout: 400.00, amount_lines: 400.00, difference: 0.00}
+          - {dataset: t, payout_id: P-amb2, paid_on: 2026-09-16, amount_payout: 400.00, amount_lines: 400.00, difference: 0.00}
+          - {dataset: t, payout_id: P-miss, paid_on: 2026-09-20, amount_payout: 500.00, amount_lines: 500.00, difference: 0.00}
+          - {dataset: t, payout_id: P-oct, paid_on: 2026-10-01, amount_payout: 600.00, amount_lines: 600.00, difference: 0.00}
+      - input: ref('deposits')
+        rows:
+          - {dataset: t, deposit_id: BK-ok, booked_on: 2026-09-04, amount: 100.00, currency: EUR, reference: STRIPE PAYOUT po_ok}
+          - {dataset: t, deposit_id: BK-mm, booked_on: 2026-09-05, amount: 199.00, currency: EUR, reference: STRIPE PAYOUT po_mismatch}
+          - {dataset: t, deposit_id: BK-uniq, booked_on: 2026-09-11, amount: 300.00, currency: EUR, reference: transfer}
+          - {dataset: t, deposit_id: BK-amb, booked_on: 2026-09-17, amount: 400.00, currency: EUR, reference: transfer}
+          - {dataset: t, deposit_id: BK-oct, booked_on: 2026-10-02, amount: 600.00, currency: EUR, reference: transfer}
+          - {dataset: t, deposit_id: BK-x, booked_on: 2026-09-25, amount: 77.00, currency: EUR, reference: transfer}
+    expect:
+      rows:
+        - {key: po_ok, cause: null, difference: 0.00}
+        - {key: po_mismatch, cause: amount_mismatch, difference: -1.00}
+        - {key: P-uniq, cause: null, difference: 0.00}
+        - {key: P-amb1, cause: ambiguous_deposit, difference: -400.00}
+        - {key: P-amb2, cause: ambiguous_deposit, difference: -400.00}
+        - {key: BK-amb, cause: ambiguous_deposit, difference: 400.00}
+        - {key: P-miss, cause: missing_deposit, difference: -500.00}
+        - {key: P-oct, cause: in_transit, difference: -600.00}
+        - {key: BK-x, cause: unexpected_deposit, difference: 77.00}
