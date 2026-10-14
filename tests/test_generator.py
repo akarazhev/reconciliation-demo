@@ -151,3 +151,18 @@ def test_wb_bank_names_every_report_in_its_reference(tmp_path):
     reports = read(tmp_path / "wb_reports.csv")
     assert [(r["booking_date"], r["amount"]) for r in bank] == [(r["payment_date"], r["total_payable"]) for r in reports]
     assert all(r["realizationreport_id"] in b["reference"].split() for r, b in zip(reports, bank, strict=True))
+
+
+def test_wb_unit_tests_feed_the_real_mapping():
+    from pathlib import Path
+
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    with (root / "dbt" / "seeds" / "kind_map_wb.csv").open(encoding="utf-8", newline="") as f:
+        seed = sorted(tuple(r.values()) for r in csv.DictReader(f))
+    spec = yaml.safe_load((root / "dbt" / "models" / "staging" / "wb" / "_wb.yml").read_text(encoding="utf-8"))
+    for test in spec["unit_tests"]:
+        given = next(g for g in test["given"] if g["input"] == "ref('kind_map_wb')")
+        rows = sorted((r["supplier_oper_name"], r["part"], r["kind"], str(r["sign"]), r["code"]) for r in given["rows"])
+        assert rows == seed, test["name"]

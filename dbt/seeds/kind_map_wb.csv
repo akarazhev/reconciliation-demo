@@ -1,7 +1,9 @@
 supplier_oper_name,part,kind,sign,code
 Продажа,retail,sale,1,sale
 Продажа,commission,fee,1,commission
+Продажа,delivery,charge,-1,logistics
 Возврат,net,refund,-1,refund
+Возврат,retail,refund,0,refund
 Логистика,delivery,charge,-1,logistics
 Хранение,storage,charge,-1,storage
 Штраф,penalty,charge,-1,fine

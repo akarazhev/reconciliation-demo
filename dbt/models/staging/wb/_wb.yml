@@ -30,9 +30,13 @@ unit_tests:
         rows:
           - {supplier_oper_name: Продажа, part: retail, kind: sale, sign: 1, code: sale}
           - {supplier_oper_name: Продажа, part: commission, kind: fee, sign: 1, code: commission}
+          - {supplier_oper_name: Продажа, part: delivery, kind: charge, sign: -1, code: logistics}
           - {supplier_oper_name: Возврат, part: net, kind: refund, sign: -1, code: refund}
+          - {supplier_oper_name: Возврат, part: retail, kind: refund, sign: 0, code: refund}
           - {supplier_oper_name: Логистика, part: delivery, kind: charge, sign: -1, code: logistics}
           - {supplier_oper_name: Хранение, part: storage, kind: charge, sign: -1, code: storage}
+          - {supplier_oper_name: Штраф, part: penalty, kind: charge, sign: -1, code: fine}
+          - {supplier_oper_name: Удержание, part: deduction, kind: charge, sign: -1, code: deduction}
     expect:
       rows:
         - {line_id: '1:retail', key: S1, kind: sale, amount: 1000.00}
@@ -40,3 +44,30 @@ unit_tests:
         - {line_id: '2:delivery', key: S1, kind: charge, amount: -100.00}
         - {line_id: '3:net', key: S2, kind: refund, amount: -850.00}
         - {line_id: '4:storage', key: 'storage:2026-09-13', kind: charge, amount: -50.00}
+
+  - name: wb_lines_split_one_sale_row_with_logistics
+    description: >
+      Review 14 Oct, the input as stated: one sale row carrying retail 1 000, ppvz_for_pay 850 and
+      delivery_rub 100 gives sale +1000, fee -150 and charge -100, a payout of 750; before the fix the
+      logistics was lost and the row came to 850.
+    model: stg_wb__lines
+    given:
+      - input: ref('stg_wb__report')
+        rows:
+          - {rrd_id: '1', realizationreport_id: '9', rr_dt: 2026-09-08, srid: S1, supplier_oper_name: Продажа, retail_price_withdisc_rub: 1000.00, ppvz_for_pay: 850.00, delivery_rub: 100.00, storage_fee: 0.00, penalty: 0.00, deduction: 0.00}
+      - input: ref('kind_map_wb')
+        rows:
+          - {supplier_oper_name: Продажа, part: retail, kind: sale, sign: 1, code: sale}
+          - {supplier_oper_name: Продажа, part: commission, kind: fee, sign: 1, code: commission}
+          - {supplier_oper_name: Продажа, part: delivery, kind: charge, sign: -1, code: logistics}
+          - {supplier_oper_name: Возврат, part: net, kind: refund, sign: -1, code: refund}
+          - {supplier_oper_name: Возврат, part: retail, kind: refund, sign: 0, code: refund}
+          - {supplier_oper_name: Логистика, part: delivery, kind: charge, sign: -1, code: logistics}
+          - {supplier_oper_name: Хранение, part: storage, kind: charge, sign: -1, code: storage}
+          - {supplier_oper_name: Штраф, part: penalty, kind: charge, sign: -1, code: fine}
+          - {supplier_oper_name: Удержание, part: deduction, kind: charge, sign: -1, code: deduction}
+    expect:
+      rows:
+        - {line_id: '1:retail', key: S1, kind: sale, amount: 1000.00}
+        - {line_id: '1:commission', key: S1, kind: fee, amount: -150.00}
+        - {line_id: '1:delivery', key: S1, kind: charge, amount: -100.00}
