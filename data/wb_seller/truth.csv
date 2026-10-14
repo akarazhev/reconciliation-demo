@@ -1,0 +1,16 @@
+level,cause,key,kind,difference
+bank,in_transit,512600005,payout,-81521.28
+operation,duplicate,wb190776057088,sale,-3606.15
+operation,duplicate,wb879099631472,sale,-1897.08
+operation,fee,wb520682672861,fee,-26.95
+operation,fee,wb587167749583,fee,-185.16
+operation,fee,wb627438593240,fee,-107.73
+operation,missing_in_ledger,wb805853288628,sale,3743.17
+operation,missing_in_ledger,wb972971733906,sale,2841.11
+operation,partial,wb573604318161,refund,757.90
+operation,partial,wb800621909443,refund,815.89
+operation,unbooked,deduction:2026-09-29,charge,-1800.00
+operation,unbooked,fine:2026-09-23,charge,-1000.00
+operation,unbooked,storage:2026-09-20,charge,-745.10
+operation,unbooked,wb480696350808,charge,-62.47
+operation,unbooked,wb614457246161,charge,-129.01

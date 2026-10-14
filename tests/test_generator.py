@@ -92,3 +92,62 @@ def test_ozon_payouts_equal_their_period_and_the_second_lands_in_october(tmp_pat
     assert all(dt.date(2026, 9, 1) <= day(r["Дата начисления"]) <= dt.date(2026, 9, 30) for r in lines)
     two_unit = Counter((r["Номер отправления"], r["Тип начисления"]) for r in lines if r["Тип начисления"] == "Продажа")
     assert max(two_unit.values()) == 2
+
+
+from generator import wb_seller
+
+
+def wb_line_total(row):
+    """Money of one report row as the books see it: a sale is retail minus commission, so ppvz_for_pay;
+    a return withholds ppvz_for_pay; services are charged at their own column."""
+    d = {k: Decimal(row[k]) for k in ("ppvz_for_pay", "delivery_rub", "storage_fee", "penalty", "deduction")}
+    sign = {"Продажа": 1, "Возврат": -1}.get(row["supplier_oper_name"], 0)
+    return sign * d["ppvz_for_pay"] - d["delivery_rub"] - d["storage_fee"] - d["penalty"] - d["deduction"]
+
+
+def test_wb_is_byte_identical_for_the_same_seed(tmp_path):
+    wb_seller.generate(tmp_path / "a")
+    wb_seller.generate(tmp_path / "b")
+    assert digest(tmp_path / "a") == digest(tmp_path / "b")
+
+
+def test_wb_plants_the_15_discrepancies_of_the_design(tmp_path):
+    wb_seller.generate(tmp_path)
+    truth = read(tmp_path / "truth.csv")
+    assert Counter(r["cause"] for r in truth) == {
+        "duplicate": 2, "missing_in_ledger": 2, "partial": 2, "fee": 3, "unbooked": 5, "in_transit": 1,
+    }
+    assert len({(r["key"], r["kind"]) for r in truth}) == 15
+
+
+def test_wb_reports_are_cut_to_september_and_the_last_is_paid_in_october(tmp_path):
+    wb_seller.generate(tmp_path)
+    reports = read(tmp_path / "wb_reports.csv")
+    assert [(r["date_from"], r["date_to"]) for r in reports] == [
+        ("2026-09-01", "2026-09-06"), ("2026-09-07", "2026-09-13"), ("2026-09-14", "2026-09-20"),
+        ("2026-09-21", "2026-09-27"), ("2026-09-28", "2026-09-30"),
+    ]
+    assert [r["payment_date"] for r in reports][-1] == "2026-10-02"
+    assert all(r["payment_date"] <= "2026-09-30" for r in reports[:-1])
+
+
+def test_wb_report_totals_equal_their_rows_without_a_second_commission(tmp_path):
+    wb_seller.generate(tmp_path)
+    rows = read(tmp_path / "wb_report.csv")
+    reports = {r["realizationreport_id"]: r for r in read(tmp_path / "wb_reports.csv")}
+    totals = defaultdict(Decimal)
+    for row in rows:
+        report = reports[row["realizationreport_id"]]
+        assert report["date_from"] <= row["rr_dt"] <= report["date_to"]
+        if row["supplier_oper_name"] == "Продажа":
+            assert Decimal(row["ppvz_for_pay"]) < Decimal(row["retail_price_withdisc_rub"])
+        totals[row["realizationreport_id"]] += wb_line_total(row)
+    assert {k: Decimal(r["total_payable"]) for k, r in reports.items()} == dict(totals)
+
+
+def test_wb_bank_names_every_report_in_its_reference(tmp_path):
+    wb_seller.generate(tmp_path)
+    bank = [r for r in read(tmp_path / "bank.csv") if r["counterparty"] == "WILDBERRIES"]
+    reports = read(tmp_path / "wb_reports.csv")
+    assert [(r["booking_date"], r["amount"]) for r in bank] == [(r["payment_date"], r["total_payable"]) for r in reports]
+    assert all(r["realizationreport_id"] in b["reference"].split() for r, b in zip(reports, bank, strict=True))

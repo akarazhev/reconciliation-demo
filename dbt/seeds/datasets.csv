@@ -1,3 +1,4 @@
 dataset,platform,currency,bank_counterparty,title,title_ru,lead_lang
 eu_shop,stripe,EUR,STRIPE,"EU web shop, Stripe payouts","Интернет-магазин в ЕС, выплаты Stripe",en
 ozon_seller,ozon,RUB,OZON,"Ozon seller, marketplace payouts","Продавец на Ozon, выплаты маркетплейса",ru
+wb_seller,wb,RUB,WILDBERRIES,"Wildberries seller, weekly reports cut at month end (demo assumption)","Продавец на Wildberries, недельные отчёты обрезаны по концу месяца (допущение демо)",ru
