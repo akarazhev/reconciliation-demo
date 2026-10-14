@@ -9,8 +9,8 @@ its payouts and the bank statement, and every difference gets a cause and an amo
   and payout schedule remain demo assumptions pending documentation verification.
 
 The discrepancies were planted on purpose and listed in `data/<company>/truth.csv`; the run fails unless SQL
-finds exactly those, once each. Data is fictional; Stripe columns follow public documentation, Ozon uses the assumptions below, and the demo is
-not affiliated with Stripe or Ozon. It shows a method, not industry experience.
+finds exactly those, once each. Data is fictional; Stripe columns follow public documentation, Ozon uses the assumptions below,
+and the demo is not affiliated with Stripe or Ozon. It shows a method, not industry experience.
 
 ## Run
 
@@ -48,7 +48,7 @@ invariants and fail the run; the self-check compares every found discrepancy wit
 The second company was added as one staging folder and one mapping table; `core` and `recon` did not change.
 `./check_repeatability.sh` proves it against the tag `stripe-only`.
 
-Added/deleted lines measured immediately after adding Ozon (Task 10):
+Added/deleted lines measured immediately after adding Ozon (Task 10), against the initial Stripe baseline:
 
 ```text
 21	0	check_repeatability.sh
@@ -63,14 +63,14 @@ Added/deleted lines measured immediately after adding Ozon (Task 10):
 37	0	tests/test_generator.py
 ```
 
-Measured dbt build times from the first full two-company run:
+Measured dbt build times after the final review fixes:
 
 ```text
-eu_shop: 14 s
+eu_shop: 4 s
 ozon_seller: 4 s
 ```
 
-Manual exceptions to the shared logic: **0**. These timings include both datasets' unit tests and
+Manual exceptions to shared logic for adding Ozon: **0**. These timings include both datasets' unit tests and
 structural checks. The generator, HTML renderer and dbt documentation build run once outside those timings.
 Two consecutive `./run.sh` runs produced identical SHA-256 hashes for the HTML report and all ten CSV files.
 
@@ -98,13 +98,45 @@ Two consecutive `./run.sh` runs produced identical SHA-256 hashes for the HTML r
 
 `uv run pytest -q` checks deterministic generation, report escaping, exact discovered/planted causes,
 Ozon decimal parsing, and rejection of unknown Stripe categories even at zero amount. The full build
-also runs five dbt unit tests, including `[100, 100]` versus `[100, 90]`, all operation and bank rules,
-the transposition explanation and full payout identifier matching (`po_1` cannot match `po_10`).
+also runs seven dbt unit tests, including `[100, 100]` versus `[100, 90]`, all operation and bank rules,
+the transposition explanation, full payout identifiers (`po_1` cannot match `po_10`), ambiguous
+references and domestic residuals following an exactly matched foreign-currency payment.
 
 Customer warnings are intentional: Stripe has 12 ledger exceptions, 5 charge/fee exceptions and 1 payout
 in transit; Ozon has 8, 8 and 1. Structural checks, truth uniqueness/counts/row comparison and all three
 bridge equations must pass with no errors. A duplicated truth row fails the self-check.
 
-Before the `stripe-only` baseline, two defects in the supplied implementation were reproduced and fixed:
+Before the initial Stripe baseline, two defects in the supplied implementation were reproduced and fixed:
 zero-amount unknown categories must fail before filtering, and payout IDs in bank references must match
 a full token. This adds two pytest cases and one dbt unit test; the planned reconciliation rules are retained.
+
+The fresh final review found two further shared matching defects: reference candidates needed uniqueness
+on both sides, and already matched foreign-currency payments must not label a domestic remainder as FX.
+Both were reproduced by failing dbt unit tests, fixed on a separate Stripe-only branch, and applied to
+the full demo. Conflicting references stay ambiguous even if one amount matches exactly.
+
+The original Stripe baseline remains at `stripe-only-initial` (`0ef846a`). The `stripe-only` tag now points
+to the independently tested, corrected Stripe-only baseline (`eec2435`), which contains no Ozon generator
+or staging. No commit history was rewritten. The default repeatability check compares that baseline with
+the complete demo, including the final corrections. The historical Ozon addition can also be checked:
+
+```sh
+git diff stripe-only-initial dc9bb5f -- dbt/models/core dbt/models/recon dbt/macros dbt/tests run.sh report.py
+```
+
+That diff is empty. Generic review corrections are recorded separately from platform-specific additions.
+
+## Scope decisions
+
+Bank reference IDs are matched as complete tokens of letters, digits, underscores or hyphens, as used by
+the synthetic inputs. A new identifier format would need a parser change. dbt usage statistics are disabled,
+and local test/dbt metadata stays out of Git; neither affects reconciliation amounts.
+
+Each dataset uses one settlement currency and one operating month. General multi-month or multi-currency
+imports need additional staging and period design. For this September bridge, a matched October receipt
+is classified as `in_transit` even if its amount differs: an October amount difference needs checking in
+that later period. Exact Ozon export fidelity remains an assumption until the manual source check.
+
+Automated acceptance passed: 14 pytest cases, seven dbt unit tests per dataset, no build errors, and
+identical CSV/report hashes across two final rebuilds. The browser runtime had no available browser; the
+founder's visual/privacy review, final README wording, public repository and publishing remain pending.
