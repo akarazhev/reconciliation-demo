@@ -55,3 +55,40 @@ def test_eu_shop_bank_has_every_arrived_payout_and_other_rows(tmp_path):
     referenced = {r["reference"].removeprefix("STRIPE PAYOUT ") for r in bank if r["counterparty"] == "STRIPE"}
     assert referenced == payout_ids
     assert any(r["counterparty"] != "STRIPE" for r in bank)
+from generator import ozon_seller
+
+
+def test_ozon_is_byte_identical_for_the_same_seed(tmp_path):
+    ozon_seller.generate(tmp_path / "a")
+    ozon_seller.generate(tmp_path / "b")
+    assert digest(tmp_path / "a") == digest(tmp_path / "b")
+
+
+def test_ozon_plants_the_17_discrepancies_of_the_spec(tmp_path):
+    ozon_seller.generate(tmp_path)
+    truth = read(tmp_path / "truth.csv")
+    assert Counter(r["cause"] for r in truth) == {
+        "duplicate": 2, "missing_in_ledger": 3, "in_transit": 1, "partial": 3, "fee": 3, "unbooked": 5,
+    }
+    assert len({(r["key"], r["kind"]) for r in truth}) == 17
+
+
+def test_ozon_payouts_equal_their_period_and_the_second_lands_in_october(tmp_path):
+    ozon_seller.generate(tmp_path)
+    lines = read(tmp_path / "ozon_report.csv", delimiter=";")
+    payouts = read(tmp_path / "ozon_payouts.csv", delimiter=";")
+
+    def day(text):
+        return dt.datetime.strptime(text, "%d.%m.%Y").date()
+
+    def amount(text):
+        return Decimal(text.replace(",", "."))
+
+    assert [p["Дата выплаты"] for p in payouts] == ["16.09.2026", "01.10.2026"]
+    for p in payouts:
+        start, end = day(p["Период с"]), day(p["Период по"])
+        in_period = [amount(r["Сумма итого, руб."]) for r in lines if start <= day(r["Дата начисления"]) <= end]
+        assert sum(in_period, Decimal("0")) == amount(p["Сумма, руб."])
+    assert all(dt.date(2026, 9, 1) <= day(r["Дата начисления"]) <= dt.date(2026, 9, 30) for r in lines)
+    two_unit = Counter((r["Номер отправления"], r["Тип начисления"]) for r in lines if r["Тип начисления"] == "Продажа")
+    assert max(two_unit.values()) == 2

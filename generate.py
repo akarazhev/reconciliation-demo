@@ -2,9 +2,9 @@
 import argparse
 from pathlib import Path
 
-from generator import eu_shop
+from generator import eu_shop, ozon_seller
 
-GENERATORS = {"eu_shop": eu_shop.generate}
+GENERATORS = {"eu_shop": eu_shop.generate, "ozon_seller": ozon_seller.generate}
 
 
 def main() -> None:
