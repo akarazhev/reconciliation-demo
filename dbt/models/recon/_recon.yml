@@ -1,0 +1,61 @@
+unit_tests:
+  - name: matches_counterexample_100_100_vs_100_90
+    description: >
+      Founder's counterexample (review 14 Oct): ledger [100, 100], platform [100, 90] is one
+      amount_mismatch of -10, not a duplicate plus a missing line.
+    model: matches
+    given:
+      - input: ref('ledger_lines')
+        rows:
+          - {dataset: t, entry_id: L1, key: A, kind: sale, amount: 100.00, currency: EUR, booked_on: 2026-09-10}
+          - {dataset: t, entry_id: L2, key: A, kind: sale, amount: 100.00, currency: EUR, booked_on: 2026-09-10}
+      - input: ref('platform_lines')
+        rows:
+          - {dataset: t, line_id: P1, payout_id: po_1, key: A, kind: sale, amount: 100.00, currency: EUR, occurred_on: 2026-09-10, customer_currency: EUR}
+          - {dataset: t, line_id: P2, payout_id: po_1, key: A, kind: sale, amount: 90.00, currency: EUR, occurred_on: 2026-09-10, customer_currency: EUR}
+    expect:
+      rows:
+        - {key: A, kind: sale, cause: amount_mismatch, difference: -10.00}
+
+  - name: matches_rules_of_the_spec
+    model: matches
+    given:
+      - input: ref('ledger_lines')
+        rows:
+          - {dataset: t, entry_id: L1, key: DUP, kind: sale, amount: 50.00, currency: EUR, booked_on: 2026-09-01}
+          - {dataset: t, entry_id: L2, key: DUP, kind: sale, amount: 50.00, currency: EUR, booked_on: 2026-09-01}
+          - {dataset: t, entry_id: L3, key: TWO, kind: sale, amount: 500.00, currency: EUR, booked_on: 2026-09-02}
+          - {dataset: t, entry_id: L4, key: TWO, kind: sale, amount: 500.00, currency: EUR, booked_on: 2026-09-02}
+          - {dataset: t, entry_id: L5, key: SPLIT, kind: sale, amount: 60.00, currency: EUR, booked_on: 2026-09-03}
+          - {dataset: t, entry_id: L6, key: SPLIT, kind: sale, amount: 40.00, currency: EUR, booked_on: 2026-09-03}
+          - {dataset: t, entry_id: L7, key: ONLYL, kind: sale, amount: 70.00, currency: EUR, booked_on: 2026-09-04}
+          - {dataset: t, entry_id: L8, key: PART, kind: refund, amount: -100.00, currency: EUR, booked_on: 2026-09-05}
+          - {dataset: t, entry_id: L9, key: FEEHI, kind: fee, amount: -75.00, currency: RUB, booked_on: 2026-09-06}
+          - {dataset: t, entry_id: L10, key: FX, kind: sale, amount: 93.71, currency: EUR, booked_on: 2026-09-07}
+          - {dataset: t, entry_id: L11, key: EDIT, kind: sale, amount: 192.00, currency: EUR, booked_on: 2026-09-08}
+      - input: ref('platform_lines')
+        rows:
+          - {dataset: t, line_id: P1, payout_id: po_1, key: DUP, kind: sale, amount: 50.00, currency: EUR, occurred_on: 2026-09-01, customer_currency: EUR}
+          - {dataset: t, line_id: P2, payout_id: po_1, key: TWO, kind: sale, amount: 500.00, currency: EUR, occurred_on: 2026-09-02, customer_currency: EUR}
+          - {dataset: t, line_id: P3, payout_id: po_1, key: TWO, kind: sale, amount: 500.00, currency: EUR, occurred_on: 2026-09-02, customer_currency: EUR}
+          - {dataset: t, line_id: P4, payout_id: po_1, key: SPLIT, kind: sale, amount: 100.00, currency: EUR, occurred_on: 2026-09-03, customer_currency: EUR}
+          - {dataset: t, line_id: P5, payout_id: po_1, key: PART, kind: refund, amount: -30.00, currency: EUR, occurred_on: 2026-09-05, customer_currency: EUR}
+          - {dataset: t, line_id: P6, payout_id: po_1, key: FEEHI, kind: fee, amount: -85.00, currency: RUB, occurred_on: 2026-09-06, customer_currency: RUB}
+          - {dataset: t, line_id: P7, payout_id: po_1, key: NOFEE, kind: fee, amount: -2.15, currency: EUR, occurred_on: 2026-09-06, customer_currency: EUR}
+          - {dataset: t, line_id: P8, payout_id: po_1, key: du_1, kind: charge, amount: -115.00, currency: EUR, occurred_on: 2026-09-06, customer_currency: EUR}
+          - {dataset: t, line_id: P9, payout_id: po_1, key: ONLYP, kind: sale, amount: 80.00, currency: EUR, occurred_on: 2026-09-06, customer_currency: EUR}
+          - {dataset: t, line_id: P10, payout_id: po_1, key: FX, kind: sale, amount: 91.87, currency: EUR, occurred_on: 2026-09-07, customer_currency: USD}
+          - {dataset: t, line_id: P11, payout_id: po_1, key: EDIT, kind: sale, amount: 129.00, currency: EUR, occurred_on: 2026-09-08, customer_currency: EUR}
+    expect:
+      rows:
+        - {key: DUP, kind: sale, cause: duplicate, difference: -50.00}
+        - {key: TWO, kind: sale, cause: null, difference: 0.00}
+        - {key: SPLIT, kind: sale, cause: null, difference: 0.00}
+        - {key: ONLYL, kind: sale, cause: missing_at_platform, difference: -70.00}
+        - {key: PART, kind: refund, cause: partial, difference: 70.00}
+        - {key: FEEHI, kind: fee, cause: fee, difference: -10.00}
+        - {key: NOFEE, kind: fee, cause: fee, difference: -2.15}
+        - {key: du_1, kind: charge, cause: unbooked, difference: -115.00}
+        - {key: ONLYP, kind: sale, cause: missing_in_ledger, difference: 80.00}
+        - {key: FX, kind: sale, cause: fx, difference: -1.84}
+        - {key: EDIT, kind: sale, cause: amount_mismatch, difference: -63.00}
