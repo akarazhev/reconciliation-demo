@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Rebuild everything from scratch: data, one dbt build per dataset, the page and the dbt docs.
+set -euo pipefail
+cd "$(dirname "$0")"
+export RECON_ROOT="$PWD"
+export DBT_SEND_ANONYMOUS_USAGE_STATS=false
+
+uv sync --frozen
+uv run python generate.py
+
+first=""
+while IFS=, read -r dataset platform currency counterparty title; do
+  [ "$dataset" = "dataset" ] && continue
+  first="${first:-$dataset:$platform}"
+  rm -f "data/$dataset/recon.duckdb" "data/$dataset/recon.duckdb.wal"
+  start=$SECONDS
+  uv run dbt build --project-dir dbt --profiles-dir dbt --vars "{dataset: $dataset, platform: $platform}"
+  echo "$dataset: $((SECONDS - start)) s"
+done < dbt/seeds/datasets.csv
+
+uv run python report.py
+dataset="${first%%:*}"
+platform="${first##*:}"
+uv run dbt docs generate --static --project-dir dbt --profiles-dir dbt --vars "{dataset: $dataset, platform: $platform}"
+mkdir -p site/docs
+cp dbt/target/static_index.html site/docs/index.html
+echo "done: site/index.html, site/docs/index.html"

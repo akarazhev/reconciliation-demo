@@ -6,3 +6,5 @@ dbt/dbt_packages/
 data/*/recon.duckdb
 data/*/recon.duckdb.wal
 site/
+.pytest_cache/
+dbt/.user.yml
