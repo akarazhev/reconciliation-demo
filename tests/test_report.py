@@ -21,3 +21,52 @@ def test_page_escapes_text_and_has_no_script():
     assert "Refunded &lt;less&gt;." in page
     assert "<script" not in page.lower()
     assert "September 2026: 3 discrepancies" in page
+
+
+SQL = (report.ROOT / "dbt" / "models" / "recon" / "discrepancies.sql").read_text(encoding="utf-8")
+
+
+def test_every_sql_explanation_has_a_russian_translation():
+    import re
+    block = SQL[SQL.index("case cause"):SQL.index("as explanation")]
+    explanations = set(re.findall(r"'([A-Z][^']*\.)'", block))
+    assert len(explanations) == 16
+    assert explanations <= set(report.RU_EXPLANATIONS), explanations - set(report.RU_EXPLANATIONS)
+
+
+def test_russian_amounts_use_a_decimal_comma_and_a_space_between_thousands():
+    assert report.fmt(Decimal("-12491.34"), "RUB", "ru") == "−12 491,34 ₽"
+    assert report.fmt(Decimal("684.51"), "EUR", "ru") == "684,51 €"
+    assert report.fmt(Decimal("684.51"), "EUR") == "€684.51"
+
+
+def test_russian_summary_counts_with_the_right_plural():
+    assert report.summary(ROWS, "EUR", "ru") == (
+        "Сентябрь 2026: 3 расхождения; недостача 50,00 €, излишек 70,00 €, в пути 600,00 €"
+    )
+    assert report.plural_ru(1) == "расхождение"
+    assert report.plural_ru(11) == "расхождений"
+    assert report.plural_ru(17) == "расхождений"
+    assert report.plural_ru(22) == "расхождения"
+
+
+def test_russian_page_translates_codes_and_links_back():
+    rows = [("operation", "duplicate", "123-1", "sale", Decimal("-50.00"), "short",
+             "Booked twice in the ledger; the platform has it once.")]
+    section = {"title": "EU web shop", "title_ru": "Продавец", "currency": "RUB", "lead_lang": "ru",
+               "bridge": [(1, "total", None, "ledger", Decimal("100.00"))], "discrepancies": rows}
+    page = report.render_page([section], "ru")
+    assert '<html lang="ru">' in page
+    assert "<script" not in page.lower()
+    assert "Продавец" in page and "дубль в учёте" in page and "продажа" in page and "учёт" in page
+    assert "В учёте проведено дважды, на площадке — один раз." in page
+    assert 'href="../"' in page and 'href="../docs/"' in page
+
+
+def test_each_page_puts_its_own_audience_first():
+    eu = {"title": "EU", "title_ru": "ЕС", "currency": "EUR", "lead_lang": "en", "bridge": [], "discrepancies": []}
+    oz = {"title": "Ozon", "title_ru": "Озон", "currency": "RUB", "lead_lang": "ru", "bridge": [], "discrepancies": []}
+    en_page = report.render_page([eu, oz], "en")
+    ru_page = report.render_page([eu, oz], "ru")
+    assert en_page.index("<h2>EU</h2>") < en_page.index("<h2>Ozon</h2>")
+    assert ru_page.index("<h2>Озон</h2>") < ru_page.index("<h2>ЕС</h2>")

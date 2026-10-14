@@ -1,3 +1,3 @@
-dataset,platform,currency,bank_counterparty,title
-eu_shop,stripe,EUR,STRIPE,"EU web shop, Stripe payouts"
-ozon_seller,ozon,RUB,OZON,"Ozon seller, marketplace payouts"
+dataset,platform,currency,bank_counterparty,title,title_ru,lead_lang
+eu_shop,stripe,EUR,STRIPE,"EU web shop, Stripe payouts","Интернет-магазин в ЕС, выплаты Stripe",en
+ozon_seller,ozon,RUB,OZON,"Ozon seller, marketplace payouts","Продавец на Ozon, выплаты маркетплейса",ru
