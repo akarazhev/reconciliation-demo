@@ -1,0 +1,13 @@
+models:
+  - name: stg_ozon__accruals
+    columns:
+      - name: line_id
+        data_tests: [unique, not_null]
+  - name: stg_ozon__lines
+    columns:
+      - name: line_id
+        data_tests: [unique, not_null]
+  - name: stg_ozon__payouts
+    columns:
+      - name: payout_id
+        data_tests: [unique, not_null]

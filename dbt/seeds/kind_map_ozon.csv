@@ -1,0 +1,7 @@
+accrual_type,kind,code
+Продажа,sale,sale
+Возврат,refund,refund
+Вознаграждение за продажу,fee,commission
+Логистика,charge,logistics
+Хранение,charge,storage
+Штраф,charge,fine
