@@ -1,0 +1,6 @@
+reporting_category,part,kind
+charge,gross,sale
+charge,fee,fee
+refund,gross,refund
+refund,fee,fee
+dispute,net,charge

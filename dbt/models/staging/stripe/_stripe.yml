@@ -1,0 +1,15 @@
+models:
+  - name: stg_stripe__payout_items
+    columns:
+      - name: balance_transaction_id
+        data_tests: [unique, not_null]
+  - name: stg_stripe__lines
+    columns:
+      - name: line_id
+        data_tests: [unique, not_null]
+  - name: stg_stripe__payouts
+    columns:
+      - name: payout_id
+        data_tests: [unique, not_null]
+      - name: period_from
+        data_tests: [not_null]

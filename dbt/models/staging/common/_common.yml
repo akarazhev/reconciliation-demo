@@ -1,0 +1,20 @@
+models:
+  - name: stg_ledger
+    columns:
+      - name: entry_id
+        data_tests: [unique, not_null]
+      - name: key
+        data_tests: [not_null]
+      - name: kind
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['sale', 'refund', 'fee', 'charge']
+  - name: stg_bank
+    columns:
+      - name: transaction_id
+        data_tests: [unique, not_null]
+  - name: stg_truth
+    columns:
+      - name: cause
+        data_tests: [not_null]

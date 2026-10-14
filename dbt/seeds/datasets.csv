@@ -1,0 +1,2 @@
+dataset,platform,currency,bank_counterparty,title
+eu_shop,stripe,EUR,STRIPE,"EU web shop, Stripe payouts"
