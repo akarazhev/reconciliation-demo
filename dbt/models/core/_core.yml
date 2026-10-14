@@ -1,0 +1,53 @@
+models:
+  - name: ledger_lines
+    config:
+      contract: {enforced: true}
+    columns:
+      - {name: dataset, data_type: varchar}
+      - {name: entry_id, data_type: varchar, data_tests: [unique, not_null]}
+      - {name: key, data_type: varchar, data_tests: [not_null]}
+      - {name: kind, data_type: varchar}
+      - {name: amount, data_type: "decimal(18,2)", data_tests: [not_null]}
+      - {name: currency, data_type: varchar}
+      - {name: booked_on, data_type: date}
+  - name: platform_lines
+    config:
+      contract: {enforced: true}
+    columns:
+      - {name: dataset, data_type: varchar}
+      - {name: line_id, data_type: varchar, data_tests: [unique, not_null]}
+      - name: payout_id
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('payouts')
+                field: payout_id
+      - {name: key, data_type: varchar, data_tests: [not_null]}
+      - {name: kind, data_type: varchar, data_tests: [not_null]}
+      - {name: amount, data_type: "decimal(18,2)", data_tests: [not_null]}
+      - {name: currency, data_type: varchar}
+      - {name: occurred_on, data_type: date}
+      - {name: customer_currency, data_type: varchar}
+  - name: payouts
+    config:
+      contract: {enforced: true}
+    columns:
+      - {name: dataset, data_type: varchar}
+      - {name: payout_id, data_type: varchar, data_tests: [unique, not_null]}
+      - {name: paid_on, data_type: date}
+      - {name: period_from, data_type: date}
+      - {name: period_to, data_type: date}
+      - {name: amount, data_type: "decimal(18,2)", data_tests: [not_null]}
+      - {name: currency, data_type: varchar}
+  - name: deposits
+    config:
+      contract: {enforced: true}
+    columns:
+      - {name: dataset, data_type: varchar}
+      - {name: deposit_id, data_type: varchar, data_tests: [unique, not_null]}
+      - {name: booked_on, data_type: date}
+      - {name: amount, data_type: "decimal(18,2)", data_tests: [not_null]}
+      - {name: currency, data_type: varchar}
+      - {name: reference, data_type: varchar}
