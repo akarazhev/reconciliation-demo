@@ -1,0 +1,7 @@
+reconciliation:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('RECON_ROOT') }}/data/{{ var('dataset') }}/recon.duckdb"
+      threads: 4

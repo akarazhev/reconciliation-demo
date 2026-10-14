@@ -1,0 +1,25 @@
+name: reconciliation
+version: "1.0.0"
+profile: reconciliation
+config-version: 2
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+vars:
+  dataset: eu_shop
+  platform: stripe
+  period_start: "2026-09-01"
+  period_end: "2026-09-30"
+  statement_end: "2026-10-07"
+  deposit_window_days: 5
+
+models:
+  reconciliation:
+    +materialized: table
+
+data_tests:
+  reconciliation:
+    +store_failures: true
