@@ -1,0 +1,8 @@
+{
+  // The published site is the built site/ folder: static files only, no Worker script.
+  "name": "reconciliation-demo",
+  "compatibility_date": "2026-10-15",
+  "assets": {
+    "directory": "./site"
+  }
+}

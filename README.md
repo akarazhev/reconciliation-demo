@@ -29,6 +29,9 @@ Needs `uv`; Python 3.13 and dbt are installed by `uv sync`. The result is `site/
 `site/ru/index.html` (Russian; the marketplace seller comes first), both without JavaScript, and `site/docs/`
 (dbt docs). Company headings and which page leads with which company come from `dbt/seeds/datasets.csv`.
 
+`site/` is committed: Cloudflare serves it as static files from `main` (`wrangler.jsonc`), with no build
+step. To update the published page, run `./run.sh` and commit `site/`.
+
 ## How it works
 
 Four levels, all in SQL (dbt + DuckDB), amounts as `DECIMAL(18,2)`:
@@ -197,6 +200,10 @@ or staging. No commit history was rewritten. The default repeatability check is 
 
 It reports no difference in shared logic. Generic review corrections are recorded separately from
 platform-specific additions.
+
+## License
+
+MIT, see [LICENSE](LICENSE). The data is fictional.
 
 ## Scope decisions
 
