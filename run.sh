@@ -21,7 +21,8 @@ done < dbt/seeds/datasets.csv
 uv run python report.py
 dataset="${first%%:*}"
 platform="${first##*:}"
-uv run dbt docs generate --static --project-dir dbt --profiles-dir dbt --vars "{dataset: $dataset, platform: $platform}"
+# The docs are published: build them with a relative root so no local path ends up in the page.
+RECON_ROOT=. uv run dbt docs generate --static --project-dir dbt --profiles-dir dbt --vars "{dataset: $dataset, platform: $platform}"
 mkdir -p site/docs
 cp dbt/target/static_index.html site/docs/index.html
 echo "done: site/index.html, site/docs/index.html"

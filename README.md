@@ -69,7 +69,9 @@ references contain no payout IDs, and its payments use one currency.
 with `ozon-added` (`dc9bb5f`), and it passes. Shared code that changed later is listed by
 `./check_repeatability.sh stripe-only-initial HEAD`: the review fixes above (three `recon` files, +54 / -7
 lines, including regression tests) and the Russian page in `report.py`, which also made the page texts
-platform-neutral so that a further company needs no change there.
+platform-neutral so that a further company needs no change there. On 15 October `report.py` gained an
+author line, page titles and search descriptions, and `run.sh` began building the published dbt docs with
+a relative root, so that no local path ends up in them; neither change touches reconciliation.
 
 Added/deleted lines measured immediately after adding Ozon (Task 10), against the initial Stripe baseline:
 
@@ -91,7 +93,8 @@ just before it (`018d99a`, after the Russian page), `wb-added` the commit that a
 `./check_repeatability.sh wb-baseline wb-added` passes. Its format differs from both earlier ones — one row
 carries several amounts, split into lines by the mapping table, as Stripe's gross and fee are — and still
 needed no change in shared logic (measured at `wb-added`; a later review added two mapping rows and a guard
-in Wildberries staging, commit `052f3c4`, and `./check_repeatability.sh wb-baseline HEAD` still passes):
+in Wildberries staging, commit `052f3c4`, and `./check_repeatability.sh wb-baseline 052f3c4` still passes;
+the page and docs changes of 15 October, listed above, come after it):
 
 ```text
 42	0	dbt/models/staging/wb/_wb.yml
