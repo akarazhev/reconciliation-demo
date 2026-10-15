@@ -80,3 +80,20 @@ def test_each_page_says_who_made_it_and_where_to_write():
     assert "Made by Andrey Karazhev." in en_page and mail in en_page and "Минск" not in en_page
     assert "Сделал Андрей Каражев, Минск." in ru_page and mail in ru_page
     assert en_page.index("<h2>EU</h2>") < en_page.index(mail) < en_page.index("<footer>")
+
+
+def test_each_page_has_a_title_and_a_description_for_search():
+    import html
+    import re
+
+    eu = {"title": "EU", "title_ru": "ЕС", "currency": "EUR", "lead_lang": "en", "bridge": [], "discrepancies": []}
+    for lang, title, description in (
+        ("en", "Why payouts don't match the books — reconciliation demo",
+         "Ledger, platform payouts and bank reconciled to the cent for three made-up sellers"),
+        ("ru", "Почему выплата маркетплейса не сходится с учётом — демо сверки",
+         "Учёт, выплаты маркетплейса и банк сверены до копейки у трёх выдуманных продавцов"),
+    ):
+        page = report.render_page([eu], lang)
+        assert html.unescape(re.search(r"<title>(.*?)</title>", page).group(1)) == title
+        meta = re.search(r'<meta name="description" content="([^"]*)">', page)
+        assert meta and html.unescape(meta.group(1)).startswith(description)

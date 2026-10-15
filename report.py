@@ -33,7 +33,9 @@ footer { margin-top: 3rem; color: #4a5368; font-size: .85rem; }
 
 TEXTS = {
     "en": {
-        "title": "Money reconciliation demo",
+        "title": "Why payouts don't match the books — reconciliation demo",
+        "description": "Ledger, platform payouts and bank reconciled to the cent for three made-up sellers (Stripe, "
+                       "Ozon, Wildberries): every discrepancy found by SQL, with its cause and amount.",
         "h1": "Money reconciliation: ledger, platform, payouts and bank",
         "lead": "Made-up companies, September 2026. Every discrepancy below was planted on purpose and found by "
                 "SQL; differences reconcile each level to the next, to the cent.",
@@ -53,7 +55,9 @@ TEXTS = {
         "docs_href": "docs/",
     },
     "ru": {
-        "title": "Сверка денег — демо",
+        "title": "Почему выплата маркетплейса не сходится с учётом — демо сверки",
+        "description": "Учёт, выплаты маркетплейса и банк сверены до копейки у трёх выдуманных продавцов (Ozon, "
+                       "Wildberries, Stripe): каждое расхождение найдено SQL, с причиной и суммой.",
         "h1": "Сверка денег: учёт, площадка, выплаты и банк",
         "lead": "Выдуманные компании, сентябрь 2026. Все расхождения ниже заложены нарочно и найдены SQL; разница "
                 "на каждом уровне сверяется со следующим до копейки.",
@@ -198,7 +202,8 @@ def render_page(sections: list[dict], lang: str = "en") -> str:
     docs = f'<a href="{t["docs_href"]}">dbt docs</a>'
     return (f'<!doctype html><html lang="{lang}"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
-            f'<title>{e(t["title"])}</title><style>{STYLE}</style></head><body><main>'
+            f'<title>{e(t["title"])}</title><meta name="description" content="{e(t["description"])}">'
+            f'<style>{STYLE}</style></head><body><main>'
             f'<nav><a href="{t["switch_href"]}">{e(t["switch"])}</a></nav>'
             f'<h1>{e(t["h1"])}</h1><p class="lead">{e(t["lead"])}</p><p class="lead">{e(t["ledger"])}</p>'
             f'{body}<p class="author">{t["author"]}</p>'
