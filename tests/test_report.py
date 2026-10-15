@@ -70,3 +70,13 @@ def test_each_page_puts_its_own_audience_first():
     ru_page = report.render_page([eu, oz], "ru")
     assert en_page.index("<h2>EU</h2>") < en_page.index("<h2>Ozon</h2>")
     assert ru_page.index("<h2>Озон</h2>") < ru_page.index("<h2>ЕС</h2>")
+
+
+def test_each_page_says_who_made_it_and_where_to_write():
+    eu = {"title": "EU", "title_ru": "ЕС", "currency": "EUR", "lead_lang": "en", "bridge": [], "discrepancies": []}
+    en_page = report.render_page([eu], "en")
+    ru_page = report.render_page([eu], "ru")
+    mail = '<a href="mailto:hello@minihub.app">hello@minihub.app</a>'
+    assert "Made by Andrey Karazhev." in en_page and mail in en_page and "Минск" not in en_page
+    assert "Сделал Андрей Каражев, Минск." in ru_page and mail in ru_page
+    assert en_page.index("<h2>EU</h2>") < en_page.index(mail) < en_page.index("<footer>")

@@ -43,6 +43,8 @@ TEXTS = {
         "discrepancies": "Discrepancies",
         "bridge_head": ("Step", "Level", "Amount"),
         "rows_head": ("Level", "Cause", "Key", "Kind", "Difference", "Effect", "Explanation"),
+        "author": "Made by Andrey Karazhev. Data moves between systems and quietly stops matching; I find the "
+                  "cause and fix it. If you have a similar case: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
         "footer": "Data is fictional. Platform file layouts follow public documentation where it could be read; "
                   "elsewhere they are demo assumptions, listed in the README. The demo is not affiliated with the "
                   "platforms. Model docs: {docs} (uses JavaScript). Rerun: <code>./run.sh</code>.",
@@ -61,6 +63,8 @@ TEXTS = {
         "discrepancies": "Расхождения",
         "bridge_head": ("Шаг", "Уровень", "Сумма"),
         "rows_head": ("Уровень", "Причина", "Ключ", "Вид", "Разница", "Итог", "Объяснение"),
+        "author": "Сделал Андрей Каражев, Минск. Данные ходят между системами и тихо перестают сходиться — я нахожу "
+                  "причину и чиню. Похожий случай у вас — напишите: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
         "footer": "Данные выдуманные. Форматы файлов площадок повторяют публичную документацию там, где её удалось "
                   "прочитать; остальное — допущения демо, они перечислены в README. Демо не связано с площадками. "
                   "Описание моделей: {docs} (нужен JavaScript). Повторить: <code>./run.sh</code>.",
@@ -197,7 +201,8 @@ def render_page(sections: list[dict], lang: str = "en") -> str:
             f'<title>{e(t["title"])}</title><style>{STYLE}</style></head><body><main>'
             f'<nav><a href="{t["switch_href"]}">{e(t["switch"])}</a></nav>'
             f'<h1>{e(t["h1"])}</h1><p class="lead">{e(t["lead"])}</p><p class="lead">{e(t["ledger"])}</p>'
-            f'{body}<footer><p>{t["footer"].format(docs=docs)}</p></footer></main></body></html>\n')
+            f'{body}<p class="author">{t["author"]}</p>'
+            f'<footer><p>{t["footer"].format(docs=docs)}</p></footer></main></body></html>\n')
 
 
 def main() -> None:
