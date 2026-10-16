@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- The link preview for the Russian pages: a 1200×627 screenshot of this file is preview/ru.png (README). -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<style>
+:root { --bg: #fbfaf7; --fg: #1d2433; --muted: #4a5368; --rule: #e3e0d8; --card: #ffffff; --accent: #1f4fd8; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1200px; height: 627px; overflow: hidden; }
+body { background: var(--bg); color: var(--fg); padding: 64px 72px 56px;
+       font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+       display: grid; grid-template-rows: auto 1fr auto; row-gap: 40px; }
+.brand { display: flex; align-items: center; gap: 16px; font-size: 26px; color: var(--muted); }
+.brand svg { width: 44px; height: 44px; }
+.main { display: grid; grid-template-columns: 1fr 500px; column-gap: 56px; align-items: center; }
+h1 { font-size: 54px; line-height: 1.08; font-weight: 750; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { margin-top: 24px; font-size: 28px; line-height: 1.3; color: var(--muted); }
+.walk { background: var(--card); border: 2px solid var(--rule); border-radius: 18px; padding: 10px 30px; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding: 18px 0;
+       font-size: 29px; font-variant-numeric: tabular-nums; }
+.row + .row { border-top: 2px solid var(--rule); }
+.row b { font-weight: 700; }
+.row.diff { color: var(--accent); }
+.row.diff span:first-child { color: var(--muted); }
+.cap { font-size: 22px; color: var(--muted); padding-top: 14px; }
+.foot { font-size: 22px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="brand">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#1f4fd8"/><rect x="7" y="9" width="18" height="3" rx="1.5" fill="#fff"/><rect x="7" y="15" width="13" height="3" rx="1.5" fill="#fff"/><rect x="7" y="21" width="8" height="3" rx="1.5" fill="#fff"/></svg>
+  reconciliation.minihub.app
+</div>
+<div class="main">
+  <div>
+    <h1>Почему выплаты Ozon и&nbsp;Wildberries не&nbsp;сходятся с&nbsp;учётом</h1>
+    <p class="sub">Каждое расхождение — с&nbsp;причиной и&nbsp;суммой, до&nbsp;копейки.</p>
+  </div>
+  <div class="walk">
+    <p class="cap">Ozon, сентябрь</p>
+    <div class="row"><span>Учёт</span><b>511&nbsp;561,31&nbsp;₽</b></div>
+    <div class="row diff"><span>Операции</span><span>+8&nbsp;763,59&nbsp;₽</span></div>
+    <div class="row diff"><span>В пути</span><span>−233&nbsp;374,32&nbsp;₽</span></div>
+    <div class="row"><span>Банк</span><b>286&nbsp;950,58&nbsp;₽</b></div>
+  </div>
+</div>
+<p class="foot">Данные выдуманные · расхождения заложены: Ozon — 17, Wildberries — 15 · найдены SQL</p>
+</body>
+</html>

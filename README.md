@@ -34,9 +34,9 @@ come from `dbt/seeds/datasets.csv`.
 `site/` is committed: Cloudflare serves it as static files from `main` (`wrangler.jsonc`), with no build
 step. To update the published page, run `./run.sh` and commit `site/`.
 
-The link preview of the English pages is `preview/en.png`, a 1200×627 screenshot of `preview/en.html`;
-its figures are typed in by hand, so a change in the EU web shop data means a new screenshot.
-`report.py` copies it to `site/preview-en.png`.
+Link previews are `preview/en.png` (EU web shop figures) and `preview/ru.png` (Ozon figures), 1200×627
+screenshots of `preview/en.html` and `preview/ru.html`; their figures are typed in by hand, so a change in
+that data means a new screenshot. `report.py` copies them to `site/preview-<lang>.png`.
 
 ## How it works
 

@@ -3,7 +3,7 @@
     site/index.html, site/ru/index.html   the start page in English and Russian: method and one card per company
     site/<slug>/index.html                one page per company, in its own language: figures, bridge, discrepancies
     site/favicon.svg                      the minihub.app icon
-    site/preview-en.png                   the link preview of the English pages, copied from preview/en.png
+    site/preview-<lang>.png               the link preview of the pages in that language, copied from preview/
 
 Every page carries the same tabs, so a reader moves between companies without a script. Nothing here names a
 platform: a company's address, tab, language, titles and search description come from dbt/seeds/datasets.csv, so a
@@ -21,10 +21,10 @@ ROOT = Path(__file__).resolve().parent
 SYMBOLS = {"EUR": "€", "RUB": "₽"}
 NBSP = " "
 LANG_TAGS = {"en": "EN", "ru": "RU"}
-# Link previews (LinkedIn, X, chats) need absolute addresses. English pages show preview/en.png, a 1200×627
-# screenshot of preview/en.html; Russian pages keep the minihub.app image until they have their own.
+# Link previews (LinkedIn, X, chats) need absolute addresses. Each language shows preview/<lang>.png, a 1200×627
+# screenshot of preview/<lang>.html.
 SITE = "https://reconciliation.minihub.app/"
-PREVIEWS = {"en": (SITE + "preview-en.png", 1200, 627), "ru": ("https://minihub.app/og-image.jpg", 2400, 1254)}
+PREVIEWS = {lang: (f"{SITE}preview-{lang}.png", 1200, 627) for lang in LANG_TAGS}
 FAVICON = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="6" fill="#1f4fd8"/>
   <rect x="7" y="9" width="18" height="3" rx="1.5" fill="#ffffff"/>
@@ -123,7 +123,8 @@ TEXTS = {
                   "Описание моделей: {docs} (нужен JavaScript).",
         "switch": "English version",
         "switch_href": "../",
-        "preview_alt": "Сверка двух систем: расхождение, пропущенная запись и дубль.",
+        "preview_alt": "Почему выплаты маркетплейсов не сходятся с учётом: учёт 511 561,31 ₽, банк 286 950,58 ₽, "
+                       "разница разобрана по уровням.",
         "index_href": "ru/",
     },
 }
@@ -356,7 +357,8 @@ def main() -> None:
         path.write_text(page, encoding="utf-8")
         print(f"written {path}")
     (site / "favicon.svg").write_text(FAVICON, encoding="utf-8")
-    shutil.copyfile(ROOT / "preview" / "en.png", site / "preview-en.png")
+    for lang in LANG_TAGS:
+        shutil.copyfile(ROOT / "preview" / f"{lang}.png", site / f"preview-{lang}.png")
 
 
 if __name__ == "__main__":
