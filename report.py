@@ -19,6 +19,9 @@ ROOT = Path(__file__).resolve().parent
 SYMBOLS = {"EUR": "€", "RUB": "₽"}
 NBSP = " "
 LANG_TAGS = {"en": "EN", "ru": "RU"}
+# Link previews (LinkedIn, X, chats) read these; the image is the minihub.app one, a two-system reconciliation.
+SITE = "https://reconciliation.minihub.app/"
+PREVIEW_IMAGE = "https://minihub.app/og-image.jpg"
 FAVICON = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="6" fill="#1f4fd8"/>
   <rect x="7" y="9" width="18" height="3" rx="1.5" fill="#ffffff"/>
@@ -88,6 +91,7 @@ TEXTS = {
                   "platforms. Model docs: {docs} (uses JavaScript).",
         "switch": "Русская версия",
         "switch_href": "ru/",
+        "preview_alt": "A reconciliation of two systems with a mismatch, a missing record and a duplicate.",
         "index_href": "",
     },
     "ru": {
@@ -115,6 +119,7 @@ TEXTS = {
                   "Описание моделей: {docs} (нужен JavaScript).",
         "switch": "English version",
         "switch_href": "../",
+        "preview_alt": "Сверка двух систем: расхождение, пропущенная запись и дубль.",
         "index_href": "ru/",
     },
 }
@@ -245,11 +250,20 @@ def tabs(companies: list[dict], current: str | None, lang: str, up: str) -> str:
     return f'<nav class="tabs">{"".join(items)}</nav>'
 
 
-def head(lang: str, title: str, description: str, up: str) -> str:
-    e = html.escape
+def head(lang: str, title: str, description: str, up: str, path: str) -> str:
+    """`path` is the page's address under SITE, e.g. "ru/" or "stripe/"; previews need absolute URLs."""
+    e, url = html.escape, SITE + path
+    preview = (f'<meta property="og:type" content="website"><meta property="og:site_name" content="MiniHub">'
+               f'<meta property="og:url" content="{url}"><meta property="og:title" content="{e(title)}">'
+               f'<meta property="og:description" content="{e(description)}">'
+               f'<meta property="og:image" content="{PREVIEW_IMAGE}"><meta property="og:image:width" content="2400">'
+               f'<meta property="og:image:height" content="1254">'
+               f'<meta property="og:image:alt" content="{e(TEXTS[lang]["preview_alt"])}">'
+               f'<meta name="twitter:card" content="summary_large_image">')
     return (f'<!doctype html><html lang="{lang}"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
             f'<title>{e(title)}</title><meta name="description" content="{e(description)}">'
+            f'<link rel="canonical" href="{url}">{preview}'
             f'<link rel="icon" href="{up}favicon.svg" type="image/svg+xml">'
             f'<style>{STYLE}</style></head><body><main>')
 
@@ -293,7 +307,7 @@ def render_company_page(company: dict, companies: list[dict]) -> str:
                           for n, h in enumerate(t["bridge_head"]))
     rows_head = "".join(f'<th class="num">{e(h)}</th>' if n == 4 else f"<th>{e(h)}</th>"
                         for n, h in enumerate(t["rows_head"]))
-    return (head(lang, company["page_title"], company["page_description"], up)
+    return (head(lang, company["page_title"], company["page_description"], up, f'{company["slug"]}/')
             + '<nav class="top"><a href="https://minihub.app">minihub.app</a></nav>'
             + tabs(companies, company["slug"], lang, up)
             + f'<h1>{e(title_of(company, lang))}</h1><p class="lead">{e(t["lead_one"])}</p>'
@@ -312,7 +326,7 @@ def render_index(companies: list[dict], lang: str = "en") -> str:
         f'<li><a href="{up}{c["slug"]}/">{e(c["tab"])}</a> <small>{e(LANG_TAGS.get(c["lang"], c["lang"]))}</small>'
         f'<p>{e(title_of(c, lang))}</p><p>{e(summary(c["discrepancies"], c["currency"], lang))}</p></li>'
         for c in companies)
-    return (head(lang, t["title"], description, up)
+    return (head(lang, t["title"], description, up, t["index_href"])
             + f'<nav class="top"><a href="https://minihub.app">minihub.app</a>'
               f'<a href="{t["switch_href"]}">{e(t["switch"])}</a></nav>'
             + tabs(companies, None, lang, up)

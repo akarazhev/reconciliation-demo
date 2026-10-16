@@ -145,6 +145,22 @@ def test_titles_and_descriptions_for_search():
     assert "двух выдуманных компаний (Shop A, Seller B)" in description
 
 
+def test_pages_carry_a_link_preview_with_their_own_address():
+    def meta(page, prop):
+        return html.unescape(re.search(rf'<meta property="{prop}" content="([^"]*)">', page).group(1))
+
+    pages = {"": report.render_index(ALL, "en"), "ru/": report.render_index(ALL, "ru"),
+             f'{EU["slug"]}/': report.render_company_page(EU, ALL), f'{RU["slug"]}/': report.render_company_page(RU, ALL)}
+    for path, page in pages.items():
+        url = "https://reconciliation.minihub.app/" + path
+        assert meta(page, "og:url") == url and f'<link rel="canonical" href="{url}">' in page
+        assert meta(page, "og:image") == "https://minihub.app/og-image.jpg"
+        title = html.unescape(re.search(r"<title>(.*?)</title>", page).group(1))
+        assert meta(page, "og:title") == title
+    assert meta(pages[""], "og:image:alt").startswith("A reconciliation")
+    assert meta(pages["ru/"], "og:image:alt").startswith("Сверка двух систем")
+
+
 def test_pages_share_the_site_icon_and_link_home():
     for page in (report.render_index(ALL, "en"), report.render_company_page(RU, ALL)):
         assert 'rel="icon"' in page and "favicon.svg" in page

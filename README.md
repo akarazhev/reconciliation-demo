@@ -222,6 +222,6 @@ that later period. Exact Ozon and Wildberries export fidelity remains an assumpt
 check; Wildberries weeks that cross a month would need a payout split between periods, which this demo
 avoids by cutting the reports.
 
-Automated acceptance passed: 34 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
+Automated acceptance passed: 35 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
 staging tests, no build errors, and identical CSV and page hashes across two final rebuilds. The browser runtime had no available browser; the
 founder's visual/privacy review, public repository and publishing remain pending.
