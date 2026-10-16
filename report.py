@@ -85,7 +85,7 @@ TEXTS = {
                   "cause and fix it. If you have a similar case: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
         "footer": "Data is fictional. Platform file layouts follow public documentation where it could be read; "
                   "elsewhere they are demo assumptions, listed in the README. The demo is not affiliated with the "
-                  "platforms. Model docs: {docs} (uses JavaScript). Rerun: <code>./run.sh</code>.",
+                  "platforms. Model docs: {docs} (uses JavaScript).",
         "switch": "Русская версия",
         "switch_href": "ru/",
         "index_href": "",
@@ -112,7 +112,7 @@ TEXTS = {
                   "причину и чиню. Похожий случай у вас — напишите: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
         "footer": "Данные выдуманные. Форматы файлов площадок повторяют публичную документацию там, где её удалось "
                   "прочитать; остальное — допущения демо, они перечислены в README. Демо не связано с площадками. "
-                  "Описание моделей: {docs} (нужен JavaScript). Повторить: <code>./run.sh</code>.",
+                  "Описание моделей: {docs} (нужен JavaScript).",
         "switch": "English version",
         "switch_href": "../",
         "index_href": "ru/",
