@@ -1,4 +1,4 @@
-dataset,platform,currency,bank_counterparty,title,title_ru,lead_lang
-eu_shop,stripe,EUR,STRIPE,"EU web shop, Stripe payouts","Интернет-магазин в ЕС, выплаты Stripe",en
-ozon_seller,ozon,RUB,OZON,"Ozon seller, marketplace payouts","Продавец на Ozon, выплаты маркетплейса",ru
-wb_seller,wb,RUB,WILDBERRIES,"Wildberries seller, weekly reports cut at month end (demo assumption)","Продавец на Wildberries, недельные отчёты обрезаны по концу месяца (допущение демо)",ru
+dataset,platform,currency,bank_counterparty,title,title_ru,lang,slug,tab,page_title,page_description
+eu_shop,stripe,EUR,STRIPE,"EU web shop, Stripe payouts","Интернет-магазин в ЕС, выплаты Stripe",en,stripe,EU web shop · Stripe,Why Stripe payouts don't match the books — reconciliation demo,"A made-up EU web shop: ledger, Stripe balance, payouts and bank reconciled to the cent. Every discrepancy found by SQL, with its cause and amount."
+ozon_seller,ozon,RUB,OZON,"Ozon seller, marketplace payouts","Продавец на Ozon, выплаты маркетплейса",ru,ozon,Ozon,Почему выплата Ozon не сходится с учётом — демо сверки,"Выдуманный продавец на Ozon: учёт, начисления площадки, выплаты и банк сверены до копейки. Каждое расхождение найдено SQL, с причиной и суммой."
+wb_seller,wb,RUB,WILDBERRIES,"Wildberries seller, weekly reports cut at month end (demo assumption)","Продавец на Wildberries, недельные отчёты обрезаны по концу месяца (допущение демо)",ru,wb,Wildberries,Почему выплата Wildberries не сходится с учётом — демо сверки,"Выдуманный продавец на Wildberries: учёт, отчёт о реализации, выплаты и банк сверены до копейки. Каждое расхождение найдено SQL, с причиной и суммой."

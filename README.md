@@ -25,9 +25,11 @@ and fix it. If you have a similar case: hello@minihub.app
 ./run.sh
 ```
 
-Needs `uv`; Python 3.13 and dbt are installed by `uv sync`. The result is `site/index.html` (English),
-`site/ru/index.html` (Russian; the marketplace seller comes first), both without JavaScript, and `site/docs/`
-(dbt docs). Company headings and which page leads with which company come from `dbt/seeds/datasets.csv`.
+Needs `uv`; Python 3.13 and dbt are installed by `uv sync`. The result is a static site without JavaScript:
+start pages `site/index.html` (English) and `site/ru/index.html` (Russian), one page per company in its
+audience's language — `site/stripe/` (English), `site/ozon/` and `site/wb/` (Russian) — joined by the same tabs
+on every page, and `site/docs/` (dbt docs). A company's address, tab, language, headings and search description
+come from `dbt/seeds/datasets.csv`.
 
 `site/` is committed: Cloudflare serves it as static files from `main` (`wrangler.jsonc`), with no build
 step. To update the published page, run `./run.sh` and commit `site/`.
@@ -74,7 +76,9 @@ with `ozon-added` (`dc9bb5f`), and it passes. Shared code that changed later is 
 lines, including regression tests) and the Russian page in `report.py`, which also made the page texts
 platform-neutral so that a further company needs no change there. On 15 October `report.py` gained an
 author line, page titles and search descriptions, and `run.sh` began building the published dbt docs with
-a relative root, so that no local path ends up in them; neither change touches reconciliation.
+a relative root, so that no local path ends up in them; neither change touches reconciliation. On 16 October
+the site was split into one page per company with tabs, and the per-company texts moved to `datasets.csv`, so
+`report.py` again names no platform (a test checks it).
 
 Added/deleted lines measured immediately after adding Ozon (Task 10), against the initial Stripe baseline:
 
@@ -121,8 +125,8 @@ wb_seller: 4 s
 
 Manual exceptions to shared logic for adding Ozon: **0**; for adding Wildberries: **0**. These timings include
 each dataset's unit tests and structural checks. The generator, HTML renderer and dbt documentation build run
-once outside those timings. Two consecutive `./run.sh` runs produced identical SHA-256 hashes for both HTML
-pages and all fifteen CSV files.
+once outside those timings. Two consecutive `./run.sh` runs produced identical SHA-256 hashes for all five HTML
+pages, the icon and all fifteen CSV files (remeasured on 16 October; the dbt docs page carries its build time).
 
 ## Assumptions
 
@@ -218,6 +222,6 @@ that later period. Exact Ozon and Wildberries export fidelity remains an assumpt
 check; Wildberries weeks that cross a month would need a payout split between periods, which this demo
 avoids by cutting the reports.
 
-Automated acceptance passed: 28 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
+Automated acceptance passed: 34 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
 staging tests, no build errors, and identical CSV and page hashes across two final rebuilds. The browser runtime had no available browser; the
 founder's visual/privacy review, public repository and publishing remain pending.

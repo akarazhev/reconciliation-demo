@@ -25,4 +25,4 @@ platform="${first##*:}"
 RECON_ROOT=. uv run dbt docs generate --static --project-dir dbt --profiles-dir dbt --vars "{dataset: $dataset, platform: $platform}"
 mkdir -p site/docs
 cp dbt/target/static_index.html site/docs/index.html
-echo "done: site/index.html, site/docs/index.html"
+echo "done: site/ — start pages in English and Russian, one page per company, site/docs/"
