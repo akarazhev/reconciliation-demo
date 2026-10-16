@@ -154,11 +154,21 @@ def test_pages_carry_a_link_preview_with_their_own_address():
     for path, page in pages.items():
         url = "https://reconciliation.minihub.app/" + path
         assert meta(page, "og:url") == url and f'<link rel="canonical" href="{url}">' in page
-        assert meta(page, "og:image") == "https://minihub.app/og-image.jpg"
         title = html.unescape(re.search(r"<title>(.*?)</title>", page).group(1))
         assert meta(page, "og:title") == title
-    assert meta(pages[""], "og:image:alt").startswith("A reconciliation")
+    for path in ("", f'{EU["slug"]}/'):
+        assert meta(pages[path], "og:image") == "https://reconciliation.minihub.app/preview-en.png"
+        assert (meta(pages[path], "og:image:width"), meta(pages[path], "og:image:height")) == ("1200", "627")
+    for path in ("ru/", f'{RU["slug"]}/'):
+        assert meta(pages[path], "og:image") == "https://minihub.app/og-image.jpg"
+    assert meta(pages[""], "og:image:alt").startswith("Why payouts don't match")
     assert meta(pages["ru/"], "og:image:alt").startswith("Сверка двух систем")
+
+
+def test_the_english_preview_is_1200_by_627():
+    png = (report.ROOT / "preview" / "en.png").read_bytes()
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert (int.from_bytes(png[16:20], "big"), int.from_bytes(png[20:24], "big")) == (1200, 627)
 
 
 def test_pages_share_the_site_icon_and_link_home():

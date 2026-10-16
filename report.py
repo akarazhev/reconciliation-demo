@@ -3,6 +3,7 @@
     site/index.html, site/ru/index.html   the start page in English and Russian: method and one card per company
     site/<slug>/index.html                one page per company, in its own language: figures, bridge, discrepancies
     site/favicon.svg                      the minihub.app icon
+    site/preview-en.png                   the link preview of the English pages, copied from preview/en.png
 
 Every page carries the same tabs, so a reader moves between companies without a script. Nothing here names a
 platform: a company's address, tab, language, titles and search description come from dbt/seeds/datasets.csv, so a
@@ -10,6 +11,7 @@ new company is a row there, not a change here.
 """
 import csv
 import html
+import shutil
 from decimal import Decimal
 from pathlib import Path
 
@@ -19,9 +21,10 @@ ROOT = Path(__file__).resolve().parent
 SYMBOLS = {"EUR": "€", "RUB": "₽"}
 NBSP = " "
 LANG_TAGS = {"en": "EN", "ru": "RU"}
-# Link previews (LinkedIn, X, chats) read these; the image is the minihub.app one, a two-system reconciliation.
+# Link previews (LinkedIn, X, chats) need absolute addresses. English pages show preview/en.png, a 1200×627
+# screenshot of preview/en.html; Russian pages keep the minihub.app image until they have their own.
 SITE = "https://reconciliation.minihub.app/"
-PREVIEW_IMAGE = "https://minihub.app/og-image.jpg"
+PREVIEWS = {"en": (SITE + "preview-en.png", 1200, 627), "ru": ("https://minihub.app/og-image.jpg", 2400, 1254)}
 FAVICON = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="6" fill="#1f4fd8"/>
   <rect x="7" y="9" width="18" height="3" rx="1.5" fill="#ffffff"/>
@@ -91,7 +94,8 @@ TEXTS = {
                   "platforms. Model docs: {docs} (uses JavaScript).",
         "switch": "Русская версия",
         "switch_href": "ru/",
-        "preview_alt": "A reconciliation of two systems with a mismatch, a missing record and a duplicate.",
+        "preview_alt": "Why payouts don't match the books: ledger €115,824.69, bank €112,327.70, a €3,496.99 "
+                       "gap walked level by level.",
         "index_href": "",
     },
     "ru": {
@@ -253,11 +257,12 @@ def tabs(companies: list[dict], current: str | None, lang: str, up: str) -> str:
 def head(lang: str, title: str, description: str, up: str, path: str) -> str:
     """`path` is the page's address under SITE, e.g. "ru/" or "stripe/"; previews need absolute URLs."""
     e, url = html.escape, SITE + path
+    image, width, height = PREVIEWS[lang]
     preview = (f'<meta property="og:type" content="website"><meta property="og:site_name" content="MiniHub">'
                f'<meta property="og:url" content="{url}"><meta property="og:title" content="{e(title)}">'
                f'<meta property="og:description" content="{e(description)}">'
-               f'<meta property="og:image" content="{PREVIEW_IMAGE}"><meta property="og:image:width" content="2400">'
-               f'<meta property="og:image:height" content="1254">'
+               f'<meta property="og:image" content="{image}"><meta property="og:image:width" content="{width}">'
+               f'<meta property="og:image:height" content="{height}">'
                f'<meta property="og:image:alt" content="{e(TEXTS[lang]["preview_alt"])}">'
                f'<meta name="twitter:card" content="summary_large_image">')
     return (f'<!doctype html><html lang="{lang}"><head><meta charset="utf-8">'
@@ -351,6 +356,7 @@ def main() -> None:
         path.write_text(page, encoding="utf-8")
         print(f"written {path}")
     (site / "favicon.svg").write_text(FAVICON, encoding="utf-8")
+    shutil.copyfile(ROOT / "preview" / "en.png", site / "preview-en.png")
 
 
 if __name__ == "__main__":

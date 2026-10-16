@@ -34,6 +34,10 @@ come from `dbt/seeds/datasets.csv`.
 `site/` is committed: Cloudflare serves it as static files from `main` (`wrangler.jsonc`), with no build
 step. To update the published page, run `./run.sh` and commit `site/`.
 
+The link preview of the English pages is `preview/en.png`, a 1200×627 screenshot of `preview/en.html`;
+its figures are typed in by hand, so a change in the EU web shop data means a new screenshot.
+`report.py` copies it to `site/preview-en.png`.
+
 ## How it works
 
 Four levels, all in SQL (dbt + DuckDB), amounts as `DECIMAL(18,2)`:
@@ -222,6 +226,6 @@ that later period. Exact Ozon and Wildberries export fidelity remains an assumpt
 check; Wildberries weeks that cross a month would need a payout split between periods, which this demo
 avoids by cutting the reports.
 
-Automated acceptance passed: 35 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
+Automated acceptance passed: 36 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
 staging tests, no build errors, and identical CSV and page hashes across two final rebuilds. The browser runtime had no available browser; the
 founder's visual/privacy review, public repository and publishing remain pending.
