@@ -121,8 +121,9 @@ def test_each_page_says_who_made_it_and_where_to_write():
     mail = '<a href="mailto:hello@minihub.app">hello@minihub.app</a>'
     en = report.render_company_page(EU, ALL)
     ru = report.render_company_page(RU, ALL)
-    assert "Made by Andrey Karazhev." in en and mail in en and "Минск" not in en
-    assert "Сделал Андрей Каражев, Минск." in ru and mail in ru
+    assert "Made by Andrey Karazhev as a side project" in en and mail in en and "Минск" not in en
+    assert "Сделал Андрей Каражев, Минск, — свой проект" in ru and mail in ru
+    assert "fix it" not in en and "чиню" not in ru      # a side project, not an offer (16 Oct)
     assert en.index("<table") < en.index(mail) < en.index("<footer>")
     for page in (report.render_index(ALL, "en"), report.render_index(ALL, "ru")):
         assert mail in page

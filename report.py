@@ -81,8 +81,8 @@ TEXTS = {
         "figures": ("discrepancies", "short", "over", "in transit"),
         "bridge_head": ("Step", "Level", "Amount"),
         "rows_head": ("Level", "Cause", "Key", "Kind", "Difference", "Effect", "Explanation"),
-        "author": "Made by Andrey Karazhev. Data moves between systems and quietly stops matching; I find the "
-                  "cause and fix it. If you have a similar case: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
+        "author": "Made by Andrey Karazhev as a side project about data that moves between systems and quietly "
+                  "stops matching. Contact: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
         "footer": "Data is fictional. Platform file layouts follow public documentation where it could be read; "
                   "elsewhere they are demo assumptions, listed in the README. The demo is not affiliated with the "
                   "platforms. Model docs: {docs} (uses JavaScript).",
@@ -108,8 +108,8 @@ TEXTS = {
         "figures": ("расхождений", "недостача", "излишек", "в пути"),
         "bridge_head": ("Шаг", "Уровень", "Сумма"),
         "rows_head": ("Уровень", "Причина", "Ключ", "Вид", "Разница", "Итог", "Объяснение"),
-        "author": "Сделал Андрей Каражев, Минск. Данные ходят между системами и тихо перестают сходиться — я нахожу "
-                  "причину и чиню. Похожий случай у вас — напишите: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
+        "author": "Сделал Андрей Каражев, Минск, — свой проект о данных, которые ходят между системами и тихо "
+                  "перестают сходиться. Почта: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
         "footer": "Данные выдуманные. Форматы файлов площадок повторяют публичную документацию там, где её удалось "
                   "прочитать; остальное — допущения демо, они перечислены в README. Демо не связано с площадками. "
                   "Описание моделей: {docs} (нужен JavaScript).",

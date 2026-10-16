@@ -16,8 +16,8 @@ finds exactly those, once each. Data is fictional; Stripe columns follow public 
 Wildberries use the assumptions below, and the demo is not affiliated with Stripe, Ozon or Wildberries.
 It shows a method, not industry experience.
 
-Made by Andrey Karazhev. Data moves between systems and quietly stops matching; I find the cause
-and fix it. If you have a similar case: hello@minihub.app
+Made by Andrey Karazhev as a side project about data that moves between systems and quietly stops
+matching. Contact: hello@minihub.app
 
 ## Run
 
