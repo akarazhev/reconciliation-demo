@@ -85,6 +85,16 @@ def test_english_page_names_causes_in_words_not_codes():
     assert "in_transit" not in page and ">duplicate<" not in page
 
 
+def test_english_page_calls_money_the_platform_took_a_deduction():
+    rows = [("operation", "unbooked", "du_1", "charge", Decimal("-45.85"), "short",
+             "Platform charge not booked in the ledger.")]
+    en = report.render_company_page(company("shop", "en", "Shop A", rows), ALL)
+    ru = report.render_company_page(company("seller", "ru", "Seller B", rows, "RUB"), ALL)
+    assert "deduction not booked" in en and "<td>deduction</td>" in en and "Platform deduction not booked" in en
+    assert "charge" not in en[en.index("<table>"):]
+    assert "удержание не проведено" in ru and "<td>удержание</td>" in ru
+
+
 def test_every_page_carries_the_same_tabs_and_marks_its_own():
     pages = {
         "index_en": (report.render_index(ALL, "en"), ""),

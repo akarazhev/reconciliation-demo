@@ -133,7 +133,7 @@ EN_CAUSES = {
     "duplicate": "duplicate in the ledger",
     "missing_in_ledger": "missing in the ledger",
     "missing_at_platform": "missing on the platform",
-    "unbooked": "charge not booked",
+    "unbooked": "deduction not booked",
     "fee": "fee not booked",
     "partial": "partial refund",
     "fx": "currency rate",
@@ -144,6 +144,10 @@ EN_CAUSES = {
     "unexpected_deposit": "deposit without a payout",
     "ambiguous_deposit": "ambiguous deposit",
 }
+# English pages say "deduction" where the data says "charge": to a payment provider's reader a charge is a customer
+# payment, while here it is money the platform took (a dispute, a deduction). The data keeps its own terms.
+EN_KINDS = {"charge": "deduction"}
+EN_EXPLANATIONS = {"Platform charge not booked in the ledger.": "Platform deduction not booked in the ledger."}
 RU_LEVELS = {"operation": "операция", "payout": "выплата", "bank": "банк"}
 RU_TOTALS = {"ledger": "учёт", "platform": "площадка", "payouts": "выплаты", "bank": "банк"}
 RU_KINDS = {"sale": "продажа", "refund": "возврат", "fee": "комиссия", "charge": "удержание", "payout": "выплата"}
@@ -306,8 +310,8 @@ def render_company_page(company: dict, companies: list[dict]) -> str:
         for _, row_type, level, label, amount in company["bridge"])
     rows = "".join(
         f"<tr><td>{e(name(RU_LEVELS, level))}</td><td>{e(name(RU_CAUSES, cause, EN_CAUSES))}</td><td>{e(key)}</td>"
-        f'<td>{e(name(RU_KINDS, kind))}</td><td class="num">{e(fmt(diff, cur, lang))}</td>'
-        f"<td>{e(name(RU_EFFECTS, effect))}</td><td>{e(name(RU_EXPLANATIONS, text))}</td></tr>"
+        f'<td>{e(name(RU_KINDS, kind, EN_KINDS))}</td><td class="num">{e(fmt(diff, cur, lang))}</td>'
+        f"<td>{e(name(RU_EFFECTS, effect))}</td><td>{e(name(RU_EXPLANATIONS, text, EN_EXPLANATIONS))}</td></tr>"
         for level, cause, key, kind, diff, effect, text in company["discrepancies"])
     bridge_head = "".join(f'<th class="num">{e(h)}</th>' if n == 2 else f"<th>{e(h)}</th>"
                           for n, h in enumerate(t["bridge_head"]))

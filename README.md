@@ -44,8 +44,8 @@ Four levels, all in SQL (dbt + DuckDB), amounts as `DECIMAL(18,2)`:
 
 1. **Operation** — ledger lines against platform lines inside a pair (key, kind). Exact pairs are taken by
    count first; the cause comes from the whole remainder: duplicate, missing in the ledger or on the
-   platform, unbooked charge, fee, partial refund, FX (a hypothesis), amount mismatch (a hypothesis, with a
-   hint when the digits are transposed).
+   platform, unbooked deduction (a Stripe dispute, a marketplace hold), fee, partial refund, FX (a
+   hypothesis), amount mismatch (a hypothesis, with a hint when the digits are transposed).
 2. **Payout** — the declared payout against the sum of its lines.
 3. **Bank** — by the payout id in the reference, or by a unique amount within five days; ambiguous pairs are
    not matched automatically. A September payout booked in October is "in transit".
@@ -226,6 +226,6 @@ that later period. Exact Ozon and Wildberries export fidelity remains an assumpt
 check; Wildberries weeks that cross a month would need a payout split between periods, which this demo
 avoids by cutting the reports.
 
-Automated acceptance passed: 36 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
+Automated acceptance passed: 37 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
 staging tests, no build errors, and identical CSV and page hashes across two final rebuilds. The browser runtime had no available browser; the
 founder's visual/privacy review, public repository and publishing remain pending.
