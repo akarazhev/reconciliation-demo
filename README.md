@@ -37,6 +37,8 @@ step. To update the published page, run `./run.sh` and commit `site/`.
 Link previews are `preview/en.png` (EU web shop figures) and `preview/ru.png` (Ozon figures), 1200×627
 screenshots of `preview/en.html` and `preview/ru.html`; their figures are typed in by hand, so a change in
 that data means a new screenshot. `report.py` copies them to `site/preview-<lang>.png`.
+It also writes `site/sitemap.xml` (every page once; the English and Russian start pages name each other) and
+`site/robots.txt`, which allows everything and points to the sitemap.
 
 ## How it works
 
@@ -226,6 +228,6 @@ that later period. Exact Ozon and Wildberries export fidelity remains an assumpt
 check; Wildberries weeks that cross a month would need a payout split between periods, which this demo
 avoids by cutting the reports.
 
-Automated acceptance passed: 37 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
+Automated acceptance passed: 40 pytest cases, seven shared dbt unit tests per dataset plus two Wildberries
 staging tests, no build errors, and identical CSV and page hashes across two final rebuilds. The browser runtime had no available browser; the
 founder's visual/privacy review, public repository and publishing remain pending.

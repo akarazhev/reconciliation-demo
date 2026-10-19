@@ -174,6 +174,33 @@ def test_pages_carry_a_link_preview_with_their_own_address():
     assert meta(pages["ru/"], "og:image:alt").startswith("Почему выплаты маркетплейсов")
 
 
+def test_sitemap_lists_every_page_once():
+    import xml.etree.ElementTree as ET
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9", "x": "http://www.w3.org/1999/xhtml"}
+    root = ET.fromstring(report.sitemap(ALL))
+    locs = [u.find("s:loc", ns).text for u in root.findall("s:url", ns)]
+    site = "https://reconciliation.minihub.app/"
+    assert locs == [site, site + "ru/", site + "shop/", site + "seller/"]
+    start = root.findall("s:url", ns)[0]
+    assert {(link.get("hreflang"), link.get("href")) for link in start.findall("x:link", ns)} == {
+        ("en", site), ("ru", site + "ru/"), ("x-default", site)}
+    assert root.findall("s:url", ns)[2].findall("x:link", ns) == []
+
+
+def test_robots_allows_everything_and_names_the_sitemap():
+    assert report.ROBOTS == ("User-agent: *\nAllow: /\n\n"
+                             "Sitemap: https://reconciliation.minihub.app/sitemap.xml\n")
+
+
+def test_start_pages_name_each_other_as_language_versions():
+    site = "https://reconciliation.minihub.app/"
+    for page in (report.render_index(ALL, "en"), report.render_index(ALL, "ru")):
+        assert f'<link rel="alternate" hreflang="en" href="{site}">' in page
+        assert f'<link rel="alternate" hreflang="ru" href="{site}ru/">' in page
+        assert f'<link rel="alternate" hreflang="x-default" href="{site}">' in page
+    assert 'hreflang=' not in report.render_company_page(EU, ALL)
+
+
 def test_each_preview_is_a_1200_by_627_png():
     for lang in report.LANG_TAGS:
         png = (report.ROOT / "preview" / f"{lang}.png").read_bytes()

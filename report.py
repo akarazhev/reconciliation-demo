@@ -4,6 +4,7 @@
     site/<slug>/index.html                one page per company, in its own language: figures, bridge, discrepancies
     site/favicon.svg                      the minihub.app icon
     site/preview-<lang>.png               the link preview of the pages in that language, copied from preview/
+    site/sitemap.xml, site/robots.txt     every page for search engines; the two start pages name each other
 
 Every page carries the same tabs, so a reader moves between companies without a script. Nothing here names a
 platform: a company's address, tab, language, titles and search description come from dbt/seeds/datasets.csv, so a
@@ -25,6 +26,9 @@ LANG_TAGS = {"en": "EN", "ru": "RU"}
 # screenshot of preview/<lang>.html.
 SITE = "https://reconciliation.minihub.app/"
 PREVIEWS = {lang: (f"{SITE}preview-{lang}.png", 1200, 627) for lang in LANG_TAGS}
+# The start page in each language, by its path under SITE; "x-default" is the one for any other language.
+START_PAGES = {"en": "", "ru": "ru/", "x-default": ""}
+ROBOTS = f"User-agent: *\nAllow: /\n\nSitemap: {SITE}sitemap.xml\n"
 FAVICON = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="6" fill="#1f4fd8"/>
   <rect x="7" y="9" width="18" height="3" rx="1.5" fill="#ffffff"/>
@@ -259,9 +263,12 @@ def tabs(companies: list[dict], current: str | None, lang: str, up: str) -> str:
     return f'<nav class="tabs">{"".join(items)}</nav>'
 
 
-def head(lang: str, title: str, description: str, up: str, path: str) -> str:
-    """`path` is the page's address under SITE, e.g. "ru/" or "stripe/"; previews need absolute URLs."""
+def head(lang: str, title: str, description: str, up: str, path: str, alternates: dict | None = None) -> str:
+    """`path` is the page's address under SITE, e.g. "ru/" or "stripe/"; previews need absolute URLs.
+    `alternates` maps a language to the path of the same page in that language."""
     e, url = html.escape, SITE + path
+    languages = "".join(f'<link rel="alternate" hreflang="{code}" href="{SITE}{other}">'
+                        for code, other in (alternates or {}).items())
     image, width, height = PREVIEWS[lang]
     preview = (f'<meta property="og:type" content="website"><meta property="og:site_name" content="MiniHub">'
                f'<meta property="og:url" content="{url}"><meta property="og:title" content="{e(title)}">'
@@ -273,7 +280,7 @@ def head(lang: str, title: str, description: str, up: str, path: str) -> str:
     return (f'<!doctype html><html lang="{lang}"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
             f'<title>{e(title)}</title><meta name="description" content="{e(description)}">'
-            f'<link rel="canonical" href="{url}">{preview}'
+            f'<link rel="canonical" href="{url}">{languages}{preview}'
             f'<link rel="icon" href="{up}favicon.svg" type="image/svg+xml">'
             f'<style>{STYLE}</style></head><body><main>')
 
@@ -336,13 +343,24 @@ def render_index(companies: list[dict], lang: str = "en") -> str:
         f'<li><a href="{up}{c["slug"]}/">{e(c["tab"])}</a> <small>{e(LANG_TAGS.get(c["lang"], c["lang"]))}</small>'
         f'<p>{e(title_of(c, lang))}</p><p>{e(summary(c["discrepancies"], c["currency"], lang))}</p></li>'
         for c in companies)
-    return (head(lang, t["title"], description, up, t["index_href"])
+    return (head(lang, t["title"], description, up, t["index_href"], START_PAGES)
             + f'<nav class="top"><a href="https://minihub.app">minihub.app</a>'
               f'<a href="{t["switch_href"]}">{e(t["switch"])}</a></nav>'
             + tabs(companies, None, lang, up)
             + f'<h1>{e(t["h1"])}</h1><p class="lead">{e(t["lead"])}</p><p class="lead">{e(t["ledger"])}</p>'
               f'<ul class="companies">{cards}</ul>'
             + tail(lang, up))
+
+
+def sitemap(companies: list[dict]) -> str:
+    """Every published page once; the start pages also list each other as language versions."""
+    languages = "".join(f'<xhtml:link rel="alternate" hreflang="{code}" href="{SITE}{path}"/>'
+                        for code, path in START_PAGES.items())
+    starts = [f"<url><loc>{SITE}{path}</loc>{languages}</url>" for path in dict.fromkeys(START_PAGES.values())]
+    others = [f"<url><loc>{SITE}{c['slug']}/</loc></url>" for c in companies]
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
+            + "\n".join(starts + others) + "\n</urlset>\n")
 
 
 def main() -> None:
@@ -363,6 +381,8 @@ def main() -> None:
     (site / "favicon.svg").write_text(FAVICON, encoding="utf-8")
     for lang in LANG_TAGS:
         shutil.copyfile(ROOT / "preview" / f"{lang}.png", site / f"preview-{lang}.png")
+    (site / "sitemap.xml").write_text(sitemap(companies), encoding="utf-8")
+    (site / "robots.txt").write_text(ROBOTS, encoding="utf-8")
 
 
 if __name__ == "__main__":
