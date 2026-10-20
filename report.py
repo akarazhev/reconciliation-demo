@@ -79,12 +79,12 @@ TEXTS = {
                        "({names}): every discrepancy found by SQL, with its cause and amount.",
         "count": {2: "two", 3: "three", 4: "four", 5: "five"},
         "h1": "Money reconciliation: ledger, platform, payouts and bank",
-        "lead": "Made-up companies, September 2026. Every discrepancy was planted on purpose and found by SQL; "
-                "differences reconcile each level to the next, to the cent.",
-        "lead_one": "A made-up company, September 2026. Every discrepancy was planted on purpose and found by SQL; "
-                    "differences reconcile each level to the next, to the cent.",
-        "ledger": "The books are a ledger export, usually from Xero, QuickBooks or NetSuite; the demo uses one "
-                  "common layout for every company.",
+        "lead": "Made-up companies, September 2026. I planted every discrepancy on purpose, and SQL finds each one. "
+                "At every level the difference adds up to the next, to the cent.",
+        "lead_one": "A made-up company, September 2026. I planted every discrepancy on purpose, and SQL finds each one. "
+                    "At every level the difference adds up to the next, to the cent.",
+        "ledger": "The books are a ledger export, usually from Xero, QuickBooks or NetSuite. Here every company uses "
+                  "the same layout.",
         "overview": "Overview",
         "bridge": "Bridge: ledger → platform → payouts → bank",
         "discrepancies": "Discrepancies",
@@ -93,9 +93,9 @@ TEXTS = {
         "rows_head": ("Level", "Cause", "Key", "Kind", "Difference", "Effect", "Explanation"),
         "author": "Made by Andrey Karazhev as a side project about data that moves between systems and quietly "
                   "stops matching. Contact: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
-        "footer": "Data is fictional. Platform file layouts follow public documentation where it could be read; "
-                  "elsewhere they are demo assumptions, listed in the README. The demo is not affiliated with the "
-                  "platforms. Model docs: {docs} (uses JavaScript).",
+        "footer": "The data is fictional. Platform files follow public documentation where I could read it; the rest "
+                  "are assumptions, listed in the README. Not affiliated with any of the platforms. "
+                  "Model docs: {docs} (uses JavaScript).",
         "switch": "Русская версия",
         "switch_href": "ru/",
         "preview_alt": "Why payouts don't match the books: ledger €115,824.69, bank €112,327.70, a €3,496.99 "
@@ -108,22 +108,22 @@ TEXTS = {
                        "каждое расхождение найдено SQL, с причиной и суммой.",
         "count": {2: "двух", 3: "трёх", 4: "четырёх", 5: "пяти"},
         "h1": "Сверка денег: учёт, площадка, выплаты и банк",
-        "lead": "Выдуманные компании, сентябрь 2026. Все расхождения заложены нарочно и найдены SQL; разница "
-                "на каждом уровне сверяется со следующим до копейки.",
-        "lead_one": "Выдуманная компания, сентябрь 2026. Все расхождения заложены нарочно и найдены SQL; разница "
-                    "на каждом уровне сверяется со следующим до копейки.",
-        "ledger": "Учёт — выгрузка проводок: у продавцов на маркетплейсах обычно из 1С или МойСклад; в демо у всех "
-                  "компаний один общий формат.",
+        "lead": "Выдуманные компании, сентябрь 2026. Расхождения я заложил нарочно, SQL находит каждое. "
+                "На каждом уровне разница сходится со следующим до копейки.",
+        "lead_one": "Выдуманная компания, сентябрь 2026. Расхождения я заложил нарочно, SQL находит каждое. "
+                    "На каждом уровне разница сходится со следующим до копейки.",
+        "ledger": "Учёт — это выгрузка проводок, у продавцов на маркетплейсах обычно из 1С или МойСклад. В демо у всех "
+                  "компаний один формат.",
         "overview": "Обзор",
         "bridge": "Мост: учёт → площадка → выплаты → банк",
         "discrepancies": "Расхождения",
         "figures": ("расхождений", "недостача", "излишек", "в пути"),
         "bridge_head": ("Шаг", "Уровень", "Сумма"),
         "rows_head": ("Уровень", "Причина", "Ключ", "Вид", "Разница", "Итог", "Объяснение"),
-        "author": "Сделал Андрей Каражев, Минск, — свой проект о данных, которые ходят между системами и тихо "
+        "author": "Сделал Андрей Каражев из Минска. Это мой проект о данных, которые ходят между системами и тихо "
                   "перестают сходиться. Почта: <a href=\"mailto:hello@minihub.app\">hello@minihub.app</a>",
-        "footer": "Данные выдуманные. Форматы файлов площадок повторяют публичную документацию там, где её удалось "
-                  "прочитать; остальное — допущения демо, они перечислены в README. Демо не связано с площадками. "
+        "footer": "Данные выдуманные. Форматы файлов площадок повторяют публичную документацию там, где я смог её "
+                  "прочитать; остальное — допущения, они перечислены в README. Демо не связано с площадками. "
                   "Описание моделей: {docs} (нужен JavaScript).",
         "switch": "English version",
         "switch_href": "../",
