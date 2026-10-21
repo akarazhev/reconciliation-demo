@@ -62,8 +62,8 @@ each addition:
   and rates are made up.
 - The Ozon and Wildberries formats are my assumptions. I couldn't read their seller documentation in October
   2026, so field names, operation types and payout dates still need checking against real exports:
-  - Ozon: six columns — accrual date, accrual type, posting number, article, quantity, amount in RUB.
-  - Wildberries: fields of the seller API realization report — `rrd_id`, `realizationreport_id`, `srid`,
+  - Ozon, six columns: accrual date, accrual type, posting number, article, quantity, amount in RUB.
+  - Wildberries, fields of the seller API realization report: `rrd_id`, `realizationreport_id`, `srid`,
     `supplier_oper_name`, `retail_price_withdisc_rub`, `ppvz_for_pay`, `delivery_rub`, `storage_fee`,
     `penalty`, `deduction`.
 - One month and one currency per company, and nothing is on the platform balance on 1 September.
