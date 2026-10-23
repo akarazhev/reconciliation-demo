@@ -72,3 +72,27 @@ def test_blank_means_only_whitespace(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     shown = json.loads(result.stdout[result.stdout.index("{"):])["show"][0]
     assert shown == {"one_space": True, "two_spaces": True, "tab": True, "text": False, "empty": False}
+
+
+@pytest.mark.parametrize("dataset", [d["dataset"] for d in load_datasets()])
+def test_bridge_balances(dataset):
+    steps = rows(ROOT / "data" / dataset / "recon.duckdb",
+                 "select entity, period, label, rows, amount from main.load_bridge")
+    assert steps
+    through, target = Counter(), {}
+    for entity, period, label, count, amount in steps:
+        if label == "target":
+            target[(entity, period)] = (count, amount)
+        else:
+            through[(entity, period, "rows")] += count
+            through[(entity, period, "amount")] += amount
+    assert set(target) == {(e, p) for e, p, _ in through}
+    for (entity, period), (count, amount) in target.items():
+        assert (through[(entity, period, "rows")], through[(entity, period, "amount")]) == (count, amount), (entity, period)
+
+
+def test_october_row_holds_the_two_shifted_payments():
+    moved_in = rows(ROOT / "data" / "subscribe_co" / "recon.duckdb",
+                    "select rows from main.load_bridge where entity = 'payments' "
+                    "and period = date '2026-10-01' and label = 'moved_in'")
+    assert moved_in == [(2,)]
