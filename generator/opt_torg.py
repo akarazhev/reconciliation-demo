@@ -77,7 +77,10 @@ def guid(rng: random.Random) -> str:
 
 
 def inn(rng: random.Random) -> str:
-    return "7" + "".join(str(rng.randint(0, 9)) for _ in range(9))
+    """A ten-digit INN whose check digit is wrong on purpose, so it cannot be a real organisation's."""
+    digits = "7" + "".join(str(rng.randint(0, 9)) for _ in range(9))
+    check = sum(w * int(d) for w, d in zip((2, 4, 10, 3, 5, 9, 4, 6, 8), digits)) % 11 % 10
+    return digits[:9] + str((check + 1) % 10)
 
 
 def make_invoices(rng: random.Random) -> list[Invoice]:

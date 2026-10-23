@@ -118,3 +118,14 @@ def test_opt_torg_constraints(tmp_path):
     paid = {r["invoice_guid"] for r in read(tmp_path / "source_payments.csv")}
     assert sum(r["number"] in old_numbers for g, r in source_docs.items() if g in paid) == 6
     assert sum(r["number"] in old_numbers for g, r in source_docs.items() if g not in paid) == 0
+
+
+def valid_inn(inn):
+    weights = (2, 4, 10, 3, 5, 9, 4, 6, 8)
+    return len(inn) == 10 and sum(w * int(d) for w, d in zip(weights, inn)) % 11 % 10 == int(inn[9])
+
+
+def test_opt_torg_inns_are_made_up(tmp_path):
+    opt_torg.generate(tmp_path)
+    inns = {r["customer_inn"] for name in ("source_invoices", "target_invoices") for r in read(tmp_path / f"{name}.csv")}
+    assert inns and not [inn for inn in inns if valid_inn(inn)]
