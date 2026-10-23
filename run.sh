@@ -18,6 +18,16 @@ while IFS=, read -r dataset platform currency counterparty title; do
   echo "$dataset: $((SECONDS - start)) s"
 done < dbt/seeds/datasets.csv
 
+# Demo 2, the load check: its own datasets and models, every time in UTC.
+while IFS=, read -r dataset relations _; do
+  [ "$dataset" = "dataset" ] && continue
+  rm -f "data/$dataset/recon.duckdb" "data/$dataset/recon.duckdb.wal"
+  start=$SECONDS
+  TZ=UTC uv run dbt build --project-dir dbt --profiles-dir dbt --select tag:load_check \
+    --vars "{dataset: $dataset, suite: load, load_relations: [${relations//;/, }]}"
+  echo "$dataset: $((SECONDS - start)) s"
+done < dbt/seeds/load/load_datasets.csv
+
 uv run python report.py
 dataset="${first%%:*}"
 platform="${first##*:}"

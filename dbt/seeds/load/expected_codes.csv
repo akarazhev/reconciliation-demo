@@ -1,1 +1,5 @@
 dataset,entity,column_name,code,value
+subscribe_co,invoices,status,P,paid
+subscribe_co,invoices,status,O,open
+subscribe_co,invoices,status,V,void
+subscribe_co,invoices,status,H,on_hold

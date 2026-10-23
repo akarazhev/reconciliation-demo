@@ -1,0 +1,16 @@
+version: 2
+
+# The billing migration: one model per entity and side, both sides with the source's column names.
+models:
+  - name: stg_subscribe_co__customers_source
+    description: Customers in the old billing database.
+  - name: stg_subscribe_co__customers_target
+    description: Customers in the new database, keyed back to customer_no through the migration's key map.
+  - name: stg_subscribe_co__invoices_source
+    description: Invoices in the old database, amounts with four decimals, status codes turned into statuses.
+  - name: stg_subscribe_co__invoices_target
+    description: Invoices in the new database, amounts with two decimals.
+  - name: stg_subscribe_co__payments_source
+    description: Payments in the old database, every time in UTC.
+  - name: stg_subscribe_co__payments_target
+    description: Payments in the new database with the batch that moved them.
