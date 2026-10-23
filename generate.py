@@ -2,12 +2,13 @@
 import argparse
 from pathlib import Path
 
-from generator import eu_shop, ozon_seller, wb_seller
+from generator import eu_shop, ozon_seller, subscribe_co, wb_seller
 
 GENERATORS = {
     "eu_shop": eu_shop.generate,
     "ozon_seller": ozon_seller.generate,
     "wb_seller": wb_seller.generate,
+    "subscribe_co": subscribe_co.generate,
 }
 
 
