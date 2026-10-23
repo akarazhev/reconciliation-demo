@@ -183,7 +183,7 @@ def start_block(lang: str) -> str:
     up = "../" if report.TEXTS[lang]["index_href"] else ""
     cards = "".join(
         f'<li><a href="{up}{d["slug"]}/">{e(d["title_ru"] if lang == "ru" else d["title"])}</a> '
-        f'<small>{e(report.LANG_TAGS.get(d["lang"], d["lang"]))}</small><p>{e(d["page_description"])}</p></li>'
+        f'<small>{e(report.LANG_TAGS.get(d["lang"], d["lang"]))}</small></li>'
         for d in load_tasks.datasets())
     return f'<h2>{e(t["start"])}</h2><p class="lead">{e(t["start_lead"])}</p><ul class="companies">{cards}</ul>'
 

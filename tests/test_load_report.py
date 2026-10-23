@@ -69,3 +69,8 @@ def test_every_explanation_has_russian_text():
     finally:
         con.close()
     assert texts and texts <= set(report_load.RU_EXPLANATIONS)
+
+
+def test_start_blocks_speak_their_language():
+    assert not re.search("[А-Яа-яЁё]", report_load.start_block("en"))
+    assert "Оптовая компания" in report_load.start_block("ru")
