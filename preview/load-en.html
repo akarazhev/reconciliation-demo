@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- The link preview of the load check pages in English: a 1200×627 screenshot of this file is preview/load-en.png:
+     chrome --headless=new --window-size=1200,627 --screenshot=preview/load-en.png preview/load-en.html -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+:root { --bg: #fbfaf7; --fg: #1d2433; --muted: #4a5368; --rule: #e3e0d8; --card: #ffffff; --accent: #1f4fd8; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1200px; height: 627px; overflow: hidden; }
+body { background: var(--bg); color: var(--fg); padding: 64px 72px 56px;
+       font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+       display: grid; grid-template-rows: auto 1fr auto; row-gap: 40px; }
+.brand { display: flex; align-items: center; gap: 16px; font-size: 26px; color: var(--muted); }
+.brand svg { width: 44px; height: 44px; }
+.main { display: grid; grid-template-columns: 1fr 500px; column-gap: 56px; align-items: center; }
+h1 { font-size: 60px; line-height: 1.08; font-weight: 750; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { margin-top: 24px; font-size: 28px; line-height: 1.3; color: var(--muted); }
+.walk { background: var(--card); border: 2px solid var(--rule); border-radius: 18px; padding: 10px 30px; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding: 18px 0;
+       font-size: 29px; font-variant-numeric: tabular-nums; }
+.row + .row { border-top: 2px solid var(--rule); }
+.row b { font-weight: 700; }
+.row.diff { color: var(--accent); }
+.row.diff span:first-child { color: var(--muted); }
+.foot { font-size: 22px; color: var(--muted); }
+.main { grid-template-columns: 1fr 520px; }
+h1 { font-size: 54px; }
+.walk { padding: 6px 28px; }
+.row { padding: 12px 0; font-size: 25px; }
+</style>
+</head>
+<body>
+<div class="brand">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#1f4fd8"/><rect x="7" y="9" width="18" height="3" rx="1.5" fill="#fff"/><rect x="7" y="15" width="13" height="3" rx="1.5" fill="#fff"/><rect x="7" y="21" width="8" height="3" rx="1.5" fill="#fff"/></svg>
+  reconciliation.minihub.app
+</div>
+<div class="main">
+  <div>
+    <h1>What a billing migration changed</h1>
+    <p class="sub">112 differences in 3 tables, each with its cause.</p>
+  </div>
+  <div class="walk">
+    <div class="row"><span>Amounts truncated</span><b>40</b></div>
+    <div class="row"><span>Codes missing from the map</span><b>30</b></div>
+    <div class="row"><span>Times shifted by the time zone</span><b>25</b></div>
+    <div class="row"><span>Spaces turned into NULL</span><b>10</b></div>
+    <div class="row"><span>Rows lost at batch boundaries</span><b>7</b></div>
+  </div>
+</div>
+<p class="foot">Made-up data · 112 planted differences, 5 causes · found by SQL (dbt + DuckDB)</p>
+</body>
+</html>

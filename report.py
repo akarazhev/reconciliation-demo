@@ -263,19 +263,21 @@ def tabs(companies: list[dict], current: str | None, lang: str, up: str) -> str:
     return f'<nav class="tabs">{"".join(items)}</nav>'
 
 
-def head(lang: str, title: str, description: str, up: str, path: str, alternates: dict | None = None) -> str:
+def head(lang: str, title: str, description: str, up: str, path: str, alternates: dict | None = None,
+         preview: tuple[str, int, int, str] | None = None) -> str:
     """`path` is the page's address under SITE, e.g. "ru/" or "stripe/"; previews need absolute URLs.
-    `alternates` maps a language to the path of the same page in that language."""
+    `alternates` maps a language to the path of the same page in that language. `preview` is a page's own
+    link preview (image URL, width, height, alt text); by default the language's preview of this site."""
     e, url = html.escape, SITE + path
     languages = "".join(f'<link rel="alternate" hreflang="{code}" href="{SITE}{other}">'
                         for code, other in (alternates or {}).items())
-    image, width, height = PREVIEWS[lang]
+    image, width, height, alt = preview or (*PREVIEWS[lang], TEXTS[lang]["preview_alt"])
     preview = (f'<meta property="og:type" content="website"><meta property="og:site_name" content="MiniHub">'
                f'<meta property="og:url" content="{url}"><meta property="og:title" content="{e(title)}">'
                f'<meta property="og:description" content="{e(description)}">'
                f'<meta property="og:image" content="{image}"><meta property="og:image:width" content="{width}">'
                f'<meta property="og:image:height" content="{height}">'
-               f'<meta property="og:image:alt" content="{e(TEXTS[lang]["preview_alt"])}">'
+               f'<meta property="og:image:alt" content="{e(alt)}">'
                f'<meta name="twitter:card" content="summary_large_image">')
     return (f'<!doctype html><html lang="{lang}"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -334,7 +336,8 @@ def render_company_page(company: dict, companies: list[dict]) -> str:
             + tail(lang, up))
 
 
-def render_index(companies: list[dict], lang: str = "en") -> str:
+def render_index(companies: list[dict], lang: str = "en", extra: str = "") -> str:
+    """`extra` is HTML placed after the company cards: the load check's block."""
     e, t = html.escape, TEXTS[lang]
     up = "../" if t["index_href"] else ""
     names = ", ".join(c["tab"] for c in companies)
@@ -348,22 +351,26 @@ def render_index(companies: list[dict], lang: str = "en") -> str:
               f'<a href="{t["switch_href"]}">{e(t["switch"])}</a></nav>'
             + tabs(companies, None, lang, up)
             + f'<h1>{e(t["h1"])}</h1><p class="lead">{e(t["lead"])}</p><p class="lead">{e(t["ledger"])}</p>'
-              f'<ul class="companies">{cards}</ul>'
+              f'<ul class="companies">{cards}</ul>{extra}'
             + tail(lang, up))
 
 
-def sitemap(companies: list[dict]) -> str:
-    """Every published page once; the start pages also list each other as language versions."""
+def sitemap(companies: list[dict], extra: tuple | list = ()) -> str:
+    """Every published page once; the start pages also list each other as language versions. `extra` are
+    further page paths under SITE."""
     languages = "".join(f'<xhtml:link rel="alternate" hreflang="{code}" href="{SITE}{path}"/>'
                         for code, path in START_PAGES.items())
     starts = [f"<url><loc>{SITE}{path}</loc>{languages}</url>" for path in dict.fromkeys(START_PAGES.values())]
     others = [f"<url><loc>{SITE}{c['slug']}/</loc></url>" for c in companies]
+    others += [f"<url><loc>{SITE}{path}</loc></url>" for path in extra]
     return ('<?xml version="1.0" encoding="UTF-8"?>\n'
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
             + "\n".join(starts + others) + "\n</urlset>\n")
 
 
 def main() -> None:
+    import report_load  # it imports this module; a module-level import would be circular
+
     companies = []
     for d in datasets():
         companies.append({"dataset": d["dataset"], "slug": d["slug"], "tab": d["tab"], "lang": d["lang"],
@@ -371,8 +378,8 @@ def main() -> None:
                           "page_title": d["page_title"], "page_description": d["page_description"],
                           "currency": d["currency"], **load(d["dataset"])})
     site = ROOT / "site"
-    pages = [(site / "index.html", render_index(companies, "en")),
-             (site / "ru" / "index.html", render_index(companies, "ru"))]
+    pages = [(site / "index.html", render_index(companies, "en", report_load.start_block("en"))),
+             (site / "ru" / "index.html", render_index(companies, "ru", report_load.start_block("ru")))]
     pages += [(site / c["slug"] / "index.html", render_company_page(c, companies)) for c in companies]
     for path, page in pages:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -381,7 +388,7 @@ def main() -> None:
     (site / "favicon.svg").write_text(FAVICON, encoding="utf-8")
     for lang in LANG_TAGS:
         shutil.copyfile(ROOT / "preview" / f"{lang}.png", site / f"preview-{lang}.png")
-    (site / "sitemap.xml").write_text(sitemap(companies), encoding="utf-8")
+    (site / "sitemap.xml").write_text(sitemap(companies, report_load.page_paths()), encoding="utf-8")
     (site / "robots.txt").write_text(ROBOTS, encoding="utf-8")
 
 

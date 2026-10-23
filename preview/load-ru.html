@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- The link preview of the load check pages in Russian: a 1200×627 screenshot of this file is preview/load-ru.png:
+     chrome --headless=new --window-size=1200,627 --screenshot=preview/load-ru.png preview/load-ru.html -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<style>
+:root { --bg: #fbfaf7; --fg: #1d2433; --muted: #4a5368; --rule: #e3e0d8; --card: #ffffff; --accent: #1f4fd8; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1200px; height: 627px; overflow: hidden; }
+body { background: var(--bg); color: var(--fg); padding: 64px 72px 56px;
+       font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+       display: grid; grid-template-rows: auto 1fr auto; row-gap: 40px; }
+.brand { display: flex; align-items: center; gap: 16px; font-size: 26px; color: var(--muted); }
+.brand svg { width: 44px; height: 44px; }
+.main { display: grid; grid-template-columns: 1fr 500px; column-gap: 56px; align-items: center; }
+h1 { font-size: 60px; line-height: 1.08; font-weight: 750; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { margin-top: 24px; font-size: 28px; line-height: 1.3; color: var(--muted); }
+.walk { background: var(--card); border: 2px solid var(--rule); border-radius: 18px; padding: 10px 30px; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding: 18px 0;
+       font-size: 29px; font-variant-numeric: tabular-nums; }
+.row + .row { border-top: 2px solid var(--rule); }
+.row b { font-weight: 700; }
+.row.diff { color: var(--accent); }
+.row.diff span:first-child { color: var(--muted); }
+.foot { font-size: 22px; color: var(--muted); }
+.main { grid-template-columns: 1fr 520px; }
+h1 { font-size: 54px; }
+.walk { padding: 6px 28px; }
+.row { padding: 12px 0; font-size: 25px; }
+</style>
+</head>
+<body>
+<div class="brand">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#1f4fd8"/><rect x="7" y="9" width="18" height="3" rx="1.5" fill="#fff"/><rect x="7" y="15" width="13" height="3" rx="1.5" fill="#fff"/><rect x="7" y="21" width="8" height="3" rx="1.5" fill="#fff"/></svg>
+  reconciliation.minihub.app
+</div>
+<div class="main">
+  <div>
+    <h1>Что потерялось при выгрузке из 1С в MySQL</h1>
+    <p class="sub">91 расхождение в 3 таблицах, у каждого своя причина.</p>
+  </div>
+  <div class="walk">
+    <div class="row"><span>Изменения не выгружены</span><b>45</b></div>
+    <div class="row"><span>Строки записаны дважды</span><b>20</b></div>
+    <div class="row"><span>Удалённые строки остались</span><b>12</b></div>
+    <div class="row"><span>Артикулы не обновлены</span><b>8</b></div>
+    <div class="row"><span>Платежи не к тому счёту</span><b>6</b></div>
+  </div>
+</div>
+<p class="foot">Данные выдуманные · 91 заложенное расхождение, 5 причин · найдено SQL (dbt + DuckDB)</p>
+</body>
+</html>

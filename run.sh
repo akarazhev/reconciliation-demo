@@ -28,6 +28,7 @@ while IFS=, read -r dataset relations _; do
   echo "$dataset: $((SECONDS - start)) s"
 done < dbt/seeds/load/load_datasets.csv
 
+uv run python report_load.py
 uv run python report.py
 dataset="${first%%:*}"
 platform="${first##*:}"
