@@ -1,0 +1,37 @@
+name: check
+
+# Both demos from scratch, then the same check twice: the build and the Airflow Dag each write exactly the
+# files in the repository, nothing more (site/docs carries the time of its build).
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - name: Build both demos from scratch
+        run: ./run.sh
+      - name: The build matches the repository
+        run: test -z "$(git status --porcelain -- . ':!site/docs')"
+      - name: Tests
+        run: uv run pytest -q
+      - name: Airflow in its own environment
+        run: |
+          uv venv .venv-airflow --python 3.13
+          uv pip install --python .venv-airflow/bin/python -r airflow/requirements.txt \
+            --constraint https://raw.githubusercontent.com/apache/airflow/constraints-3.3.2/constraints-3.13.txt
+      - name: Run the load check as an Airflow Dag
+        env:
+          TZ: UTC
+          AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+        run: |
+          export AIRFLOW_HOME="$PWD/.airflow" AIRFLOW__CORE__DAGS_FOLDER="$PWD/airflow/dags"
+          .venv-airflow/bin/airflow db migrate
+          .venv-airflow/bin/airflow dags test load_check
+      - name: The Dag wrote the same files as the build
+        run: test -z "$(git status --porcelain -- . ':!site/docs')"
