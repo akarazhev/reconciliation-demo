@@ -81,7 +81,7 @@
         {%- else %}
         null::date as _period,
         {%- endif %}
-        {%- if parent and parent['modified_column'] %}
+        {%- if parent and parent['modified_column'] and side == 'source' %}
         p.{{ parent['modified_column'] }} as _parent_modified,
         {%- endif %}
         {{ ('r.' ~ measures[0]) if measures else 'null' }}::decimal(18, 4) as _amount
