@@ -11,7 +11,7 @@ key_map as (
 select
     invoices.invoice_no,
     case when key_map.customer_no is null
-         then error('Unknown subscribe_co customer_id: ' || invoices.customer_id)
+         then error('Unknown subscribe_co customer_id: ' || coalesce(invoices.customer_id, 'NULL'))
          else key_map.customer_no end as customer_no,
     timezone('UTC', invoices.issued_at) as issued_at,
     invoices.amount,

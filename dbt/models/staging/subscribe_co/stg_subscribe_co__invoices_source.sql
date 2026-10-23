@@ -16,7 +16,7 @@ select
     invoices.amount,
     invoices.currency,
     case when codes.value is null
-         then error('Unknown subscribe_co status_code: ' || invoices.status_code)
+         then error('Unknown subscribe_co status_code: ' || coalesce(invoices.status_code, 'NULL'))
          else codes.value end as status
 from invoices
 left join codes on codes.code = invoices.status_code

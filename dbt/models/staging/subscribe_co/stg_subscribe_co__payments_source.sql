@@ -8,7 +8,7 @@ select
         when 'card' then timezone('UTC', paid_at::timestamptz)
         when 'bank' then timezone('UTC', paid_at::timestamptz)
         when 'manual' then timezone('UTC', timezone('Europe/Helsinki', paid_at::timestamp))
-        else error('Unknown subscribe_co channel: ' || channel) end as paid_at,
+        else error('Unknown subscribe_co channel: ' || coalesce(channel, 'NULL')) end as paid_at,
     amount,
     channel
 from read_csv('{{ data_file("legacy_payments.csv") }}', header = true, columns = {

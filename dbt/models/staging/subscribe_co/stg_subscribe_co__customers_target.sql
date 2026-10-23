@@ -11,7 +11,7 @@ key_map as (
 )
 select
     case when key_map.customer_no is null
-         then error('Unknown subscribe_co customer_id: ' || customers.customer_id)
+         then error('Unknown subscribe_co customer_id: ' || coalesce(customers.customer_id, 'NULL'))
          else key_map.customer_no end as customer_no,
     customers.name,
     customers.country,

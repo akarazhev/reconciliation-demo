@@ -41,6 +41,10 @@ def test_manual_paid_at_is_converted_from_helsinki():
 @pytest.mark.parametrize(("file", "column", "value", "model"), [
     ("legacy_invoices.csv", "status_code", "X", "stg_subscribe_co__invoices_source"),
     ("legacy_payments.csv", "channel", "crypto", "stg_subscribe_co__payments_source"),
+    ("legacy_invoices.csv", "status_code", "", "stg_subscribe_co__invoices_source"),
+    ("legacy_payments.csv", "channel", "", "stg_subscribe_co__payments_source"),
+    ("target_customers.csv", "customer_id", "", "stg_subscribe_co__customers_target"),
+    ("target_invoices.csv", "customer_id", "", "stg_subscribe_co__invoices_target"),
 ])
 def test_unknown_values_stop_the_build(tmp_path, file, column, value, model):
     data = tmp_path / "data" / "subscribe_co"
@@ -57,7 +61,7 @@ def test_unknown_values_stop_the_build(tmp_path, file, column, value, model):
          "--vars", "{dataset: subscribe_co, suite: load, load_relations: []}", "--select", model, "expected_codes"],
         env=env, capture_output=True, text=True, timeout=120)
     assert result.returncode != 0, result.stdout + result.stderr
-    assert f"Unknown subscribe_co {column}: {value}" in result.stdout + result.stderr
+    assert f"Unknown subscribe_co {column}: {value or 'NULL'}" in result.stdout + result.stderr
 
 
 def test_address_line2_keeps_a_single_space():
