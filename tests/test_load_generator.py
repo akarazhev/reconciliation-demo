@@ -3,7 +3,7 @@ import datetime as dt
 import hashlib
 from collections import Counter
 
-from generator import subscribe_co
+from generator import opt_torg, subscribe_co
 
 HELSINKI_SUMMER = dt.timedelta(hours=3)
 
@@ -66,3 +66,55 @@ def test_single_space_survives_csv(tmp_path):
     subscribe_co.generate(tmp_path)
     customers = read(tmp_path / "legacy_customers.csv")
     assert sum(r["address_line2"] == " " for r in customers) == 10
+
+
+def test_opt_torg_is_deterministic(tmp_path):
+    opt_torg.generate(tmp_path / "a")
+    opt_torg.generate(tmp_path / "b")
+    assert digest(tmp_path / "a") == digest(tmp_path / "b")
+
+
+def test_opt_torg_planted_counts(tmp_path):
+    opt_torg.generate(tmp_path)
+    truth = read(tmp_path / "truth.csv")
+    assert Counter(r["cause"] for r in truth) == {
+        "deleted_left_behind": 12, "changed_not_exported": 45, "late_item_not_updated": 8,
+        "payment_wrong_invoice": 6, "duplicate_after_rerun": 20,
+    }
+    assert len(truth) == 91
+
+
+def test_opt_torg_row_counts(tmp_path):
+    opt_torg.generate(tmp_path)
+    counts = {name: len(read(tmp_path / f"{name}.csv")) for name in (
+        "source_invoices", "source_lines", "source_payments", "source_article_renames",
+        "target_invoices", "target_lines", "target_payments", "export_runs")}
+    assert counts == {
+        "source_invoices": 900, "source_lines": 3600, "source_payments": 850, "source_article_renames": 8,
+        "target_invoices": 1200, "target_lines": 3632, "target_payments": 850, "export_runs": 31,
+    }
+
+
+def test_opt_torg_constraints(tmp_path):
+    opt_torg.generate(tmp_path)
+    source_docs = {r["doc_guid"]: r for r in read(tmp_path / "source_invoices.csv")}
+    target_docs = {r["doc_guid"]: r for r in read(tmp_path / "target_invoices.csv")}
+    changed = {g for g, r in source_docs.items() if r["total"] != target_docs[g]["total"]}
+    assert len(changed) == 15
+    source_lines = {r["line_guid"] for r in read(tmp_path / "source_lines.csv")}
+    target_lines = read(tmp_path / "target_lines.csv")
+    deleted = [r for r in target_lines if r["line_guid"] not in source_lines]
+    assert len(deleted) == 12 and {r["doc_guid"] for r in deleted} <= changed
+    renames = read(tmp_path / "source_article_renames.csv")
+    for rename in renames:
+        uses = [r for r in target_lines if r["article"] == rename["old_article"]]
+        assert len(uses) == 1 and uses[0]["doc_guid"] not in changed, rename["old_article"]
+    runs = read(tmp_path / "export_runs.csv")
+    assert sorted(r["run"] for r in runs if r["export_night"] == "2026-09-17") == ["1", "2"]
+    assert sum(r["export_run"] == "2" for r in target_lines) == 20
+    assert {r["export_night"] for r in target_lines if r["export_run"] == "2"} == {"2026-09-17"}
+    old_numbers = {r["number"] for g, r in target_docs.items() if g not in source_docs}
+    assert len(old_numbers) == 300
+    paid = {r["invoice_guid"] for r in read(tmp_path / "source_payments.csv")}
+    assert sum(r["number"] in old_numbers for g, r in source_docs.items() if g in paid) == 6
+    assert sum(r["number"] in old_numbers for g, r in source_docs.items() if g not in paid) == 0

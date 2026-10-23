@@ -2,3 +2,6 @@ dataset,entity,key,columns,measures,period_column,parent_entity,parent_column,re
 subscribe_co,customers,customer_no,name;country;address_line1;address_line2;created_at,,,,,,,,,,,,,,,
 subscribe_co,invoices,invoice_no,customer_no;issued_at;amount;currency;status,amount,issued_at,,,,,,,,,,,,,2
 subscribe_co,payments,payment_id,invoice_no;paid_at;amount;channel,amount,paid_at,,,,,,,,,batch_no,paid_at,,,2
+opt_torg,invoices,doc_guid,number;doc_date;customer_inn;total,total,doc_date,,,,,,modified_at,exported_at,,,,,,
+opt_torg,lines,line_guid,doc_guid;line_no;article;qty;price;amount,amount,,invoices,doc_guid,,,,,exported_at,export_run,,,article,stg_opt_torg__article_renames,
+opt_torg,payments,payment_guid,invoice_guid;number;pay_date;amount,amount,pay_date,,,invoices,invoice_guid,number,,exported_at,,,,,,

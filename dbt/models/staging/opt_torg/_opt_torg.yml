@@ -1,0 +1,20 @@
+version: 2
+
+# The nightly 1C export to MySQL: one model per entity and side, both sides with 1C's column names.
+models:
+  - name: stg_opt_torg__exports
+    description: Export runs, one per night and a second one on the night of 17 September.
+  - name: stg_opt_torg__article_renames
+    description: Article codes renamed in 1C, as old_value and new_value.
+  - name: stg_opt_torg__invoices_source
+    description: Invoices in 1C with the time each was last modified.
+  - name: stg_opt_torg__invoices_target
+    description: Invoices in MySQL, last September's included, with the time of the run that wrote them.
+  - name: stg_opt_torg__lines_source
+    description: Invoice lines in 1C.
+  - name: stg_opt_torg__lines_target
+    description: Invoice lines in MySQL, a re-run's second copies included.
+  - name: stg_opt_torg__payments_source
+    description: Payments in 1C, linked to their invoice.
+  - name: stg_opt_torg__payments_target
+    description: Payments in MySQL, linked by the export to the earliest invoice with the named number.
