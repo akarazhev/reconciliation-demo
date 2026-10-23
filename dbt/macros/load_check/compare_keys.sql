@@ -53,7 +53,7 @@
         select
             _key as key, count(*) as copies, min(_period) as period_target,
             {{ ('count(distinct ' ~ cfg['run_column'] ~ ')') if cfg['run_column'] else '1' }} as runs,
-            sum(_amount) - first(_amount order by {{ first_copy }}) as amount_target
+            coalesce(sum(_amount), 0) - coalesce(first(_amount order by {{ first_copy }}), 0) as amount_target
         from target_rows
         group by _key
         having count(*) > 1

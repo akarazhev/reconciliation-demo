@@ -145,3 +145,18 @@ def test_amount_lost_in_the_target_keeps_the_bridge_balanced(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     assert rows(db, "select cause, target_value from main.load_discrepancies "
                     f"where key = '{empty_one_amount.key}' and column_name = 'amount'") == [("value_mismatch", None)]
+
+
+def test_amount_lost_in_the_first_copy_keeps_the_bridge_balanced(tmp_path):
+    def empty_the_first_copy(data):
+        with (data / "target_lines.csv").open(encoding="utf-8", newline="") as f:
+            repeat = next(r for r in csv.DictReader(f) if r["export_run"] == "2")
+        rewrite(data / "target_lines.csv", edit=lambda r: {**r, "amount": ""}
+                if r["line_guid"] == repeat["line_guid"] and r["export_run"] == "1" else r)
+        empty_the_first_copy.key, empty_the_first_copy.kept = repeat["line_guid"], Decimal(repeat["amount"])
+
+    result, db = build_copy(tmp_path, "opt_torg", empty_the_first_copy)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert rows(db, "select amount_target from main.load_discrepancies "
+                    f"where key = '{empty_the_first_copy.key}' and cause = 'duplicate_after_rerun'") == [
+        (empty_the_first_copy.kept,)]
