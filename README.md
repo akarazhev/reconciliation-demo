@@ -103,9 +103,8 @@ offset, an export that picks documents by date, a lines table without a unique k
 ## Adding a dataset to the load check
 
 The 1C export was added as configuration rows and its own staging models, with one change to the shared code: a
-line inside a document read the document's modification time on both sides, while only the source keeps it. The
-fix is one line, committed on its own before the dataset. To see what the second dataset changed in the shared
-folders:
+line inside a document read the document's modification time on both sides, while only the source keeps it. To
+see what the second dataset changed in the shared folders:
 
 ```sh
 git diff --stat load-en-only load-ru-added -- dbt/macros/load_check dbt/models/load dbt/tests/load
