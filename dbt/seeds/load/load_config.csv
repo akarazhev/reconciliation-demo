@@ -1,1 +1,4 @@
 dataset,entity,key,columns,measures,period_column,parent_entity,parent_column,ref_entity,ref_column,ref_number_column,modified_column,export_column,run_column,batch_column,order_column,code_column,history_relation,money_scale_target
+subscribe_co,customers,customer_no,name;country;address_line1;address_line2;created_at,,,,,,,,,,,,,,,
+subscribe_co,invoices,invoice_no,customer_no;issued_at;amount;currency;status,amount,issued_at,,,,,,,,,,,,,2
+subscribe_co,payments,payment_id,invoice_no;paid_at;amount;channel,amount,paid_at,,,,,,,,,batch_no,paid_at,,,2

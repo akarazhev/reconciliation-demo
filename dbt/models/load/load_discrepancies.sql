@@ -1,11 +1,13 @@
 {{ config(enabled = var('suite', 'recon') == 'load', tags = ['load_check']) }}
 {% for r in var('load_relations', []) %}-- depends_on: {{ ref(r) }}
 {% endfor %}
--- Placeholder until the comparison lands: empty, with the key columns of the final table.
+-- Every difference the load made, with its cause and a one-line explanation (spec §5.3).
 select
-    cast(null as varchar) as dataset,
-    cast(null as varchar) as entity,
-    cast(null as varchar) as cause,
-    cast(null as varchar) as key,
-    cast(null as varchar) as column_name
-where false
+    d.dataset, d.entity, d.cause, d.key, d.column_name, d.source_value, d.target_value, d.difference,
+    d.period_source, d.period_target, d.amount_source, d.amount_target,
+    {{ load_explanation('d.cause') }} as explanation
+from (
+    select * from {{ ref('load_key_diff') }}
+    union all by name
+    select * from {{ ref('load_value_diff') }}
+) as d

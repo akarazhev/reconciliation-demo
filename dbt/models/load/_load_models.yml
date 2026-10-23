@@ -1,0 +1,13 @@
+version: 2
+
+# Demo 2: shared models, driven by seeds/load/load_config.csv; none of them names a dataset or its columns.
+models:
+  - name: load_truth
+    description: The differences the generator planted (truth.csv), at the grain of load_discrepancies.
+  - name: load_key_diff
+    description: Rows on one side only and keys the target holds more than once, with their cause.
+  - name: load_value_diff
+    description: Values that differ on keys present on both sides, one row per column, with their cause.
+  - name: load_discrepancies
+    description: Every difference of the load. Difference is target minus source for numbers, hours for times,
+      -1 or +1 for rows, NULL for text.
