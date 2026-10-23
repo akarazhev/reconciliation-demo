@@ -2,13 +2,14 @@
     {#- Keys on both sides whose values differ, one row per column (spec §5.2). Only is distinct from: two NULLs
         are equal. A key the target holds twice is compared with its first copy; the copy itself is a key difference. -#}
     {%- set kinds = load_column_kinds(load_relation(cfg['entity'], 'source')) -%}
+    {%- set first_copy = ((cfg['run_column'] ~ ', ') if cfg['run_column'] else '') ~ '_amount' -%}
     with
     source_rows as (
         {{ load_side_rows(rows, cfg, 'source') }}
     ),
     target_rows as (
         select * from ({{ load_side_rows(rows, cfg, 'target') }})
-        qualify row_number() over (partition by _key order by {{ cfg['run_column'] or '_key' }}) = 1
+        qualify row_number() over (partition by _key order by {{ first_copy }}) = 1
     )
     {%- for column in load_list(cfg['columns']) %}
     select

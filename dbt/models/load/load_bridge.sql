@@ -36,7 +36,8 @@ row_steps as (
     group by all
 ),
 measure_steps as (
-    select f.entity, f.period_source as period, f.cause as label, 0 as rows, sum(f.difference) as amount
+    select f.entity, f.period_source as period, f.cause as label, 0 as rows,
+           sum(coalesce(f.amount_target, 0) - coalesce(f.amount_source, 0)) as amount
     from found as f
     join measures as m on m.entity = f.entity and m.measure = f.column_name
     where not exists (select 1 from moved where moved.entity = f.entity and moved.key = f.key)

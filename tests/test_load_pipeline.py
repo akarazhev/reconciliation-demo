@@ -96,3 +96,52 @@ def test_october_row_holds_the_two_shifted_payments():
                     "select rows from main.load_bridge where entity = 'payments' "
                     "and period = date '2026-10-01' and label = 'moved_in'")
     assert moved_in == [(2,)]
+
+
+def build_copy(tmp_path, dataset, change):
+    """Build a changed copy of a dataset with every check except the self-check, which the change breaks."""
+    row = next(d for d in load_datasets() if d["dataset"] == dataset)
+    data = tmp_path / "data" / dataset
+    shutil.copytree(ROOT / "data" / dataset, data, ignore=shutil.ignore_patterns("recon.duckdb*"))
+    change(data)
+    relations = ", ".join(row["relations"].split(";"))
+    result = dbt(tmp_path, "UTC", "build", "--select", "tag:load_check", "--exclude", "load_truth_match",
+                 "load_truth_counts", "--vars", f"{{dataset: {dataset}, suite: load, load_relations: [{relations}]}}")
+    return result, data / "recon.duckdb"
+
+
+def rewrite(path, keep=lambda row: True, edit=lambda row: row):
+    with path.open(encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        header, kept = reader.fieldnames, [edit(r) for r in reader if keep(r)]
+    with path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(kept)
+
+
+def test_line_loaded_twice_then_deleted_is_one_extra_and_one_repeat(tmp_path):
+    def delete_a_repeated_line(data):
+        with (data / "target_lines.csv").open(encoding="utf-8", newline="") as f:
+            twice = next(r["line_guid"] for r in csv.DictReader(f) if r["export_run"] == "2")
+        rewrite(data / "source_lines.csv", keep=lambda r: r["line_guid"] != twice)
+        delete_a_repeated_line.key = twice
+
+    result, db = build_copy(tmp_path, "opt_torg", delete_a_repeated_line)
+    assert result.returncode == 0, result.stdout + result.stderr
+    found = rows(db, "select cause, column_name, difference from main.load_discrepancies "
+                     f"where key = '{delete_a_repeated_line.key}' order by cause")
+    assert found == [("deleted_left_behind", None, Decimal("1.0000")), ("duplicate_after_rerun", None, Decimal("1.0000"))]
+
+
+def test_amount_lost_in_the_target_keeps_the_bridge_balanced(tmp_path):
+    def empty_one_amount(data):
+        with (data / "target_invoices.csv").open(encoding="utf-8", newline="") as f:
+            first = next(csv.DictReader(f))["invoice_no"]
+        rewrite(data / "target_invoices.csv", edit=lambda r: {**r, "amount": ""} if r["invoice_no"] == first else r)
+        empty_one_amount.key = first
+
+    result, db = build_copy(tmp_path, "subscribe_co", empty_one_amount)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert rows(db, "select cause, target_value from main.load_discrepancies "
+                    f"where key = '{empty_one_amount.key}' and column_name = 'amount'") == [("value_mismatch", None)]

@@ -1,5 +1,7 @@
 {% macro compare_keys(rows, cfg, bounds) %}
-    {#- Rows on one side only, and keys the target holds more than once (spec §5.1, first matching cause). -#}
+    {#- Rows on one side only, and keys the target holds more than once (spec §5.1, first matching cause). A key the
+        target holds several times counts once as extra and once as a repeat: the first copy is the extra row. -#}
+    {%- set first_copy = ((cfg['run_column'] ~ ', ') if cfg['run_column'] else '') ~ '_amount' -%}
     with
     source_rows as (
         {{ load_side_rows(rows, cfg, 'source') }}
@@ -40,20 +42,18 @@
             {%- else %}
             'extra_in_target' as cause
             {%- endif %}
-        from target_rows as t
+        from (
+            select * from target_rows
+            qualify row_number() over (partition by _key order by {{ first_copy }}) = 1
+        ) as t
         where {{ load_in_scope('t._period', bounds) }}
           and not exists (select 1 from source_rows as s where s._key = t._key)
     ),
     copies as (
         select
             _key as key, count(*) as copies, min(_period) as period_target,
-            {%- if cfg['run_column'] %}
-            count(distinct {{ cfg['run_column'] }}) as runs,
-            sum(_amount) - arg_min(_amount, {{ cfg['run_column'] }}) as amount_target
-            {%- else %}
-            1 as runs,
-            sum(_amount) - min(_amount) as amount_target
-            {%- endif %}
+            {{ ('count(distinct ' ~ cfg['run_column'] ~ ')') if cfg['run_column'] else '1' }} as runs,
+            sum(_amount) - first(_amount order by {{ first_copy }}) as amount_target
         from target_rows
         group by _key
         having count(*) > 1
