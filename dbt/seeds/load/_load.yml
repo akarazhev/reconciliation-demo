@@ -1,0 +1,26 @@
+version: 2
+
+# Demo 2 tables: loaded only in a load check run (suite: load), so a demo 1 build never sees them.
+# Every column is text: a column that is empty in every row would otherwise be read as a number.
+seeds:
+  - name: load_datasets
+    config:
+      enabled: "{{ var('suite', 'recon') == 'load' }}"
+      tags: [load_check]
+      column_types: {dataset: varchar, relations: varchar, lang: varchar, slug: varchar, period_start: varchar,
+                     period_end: varchar, title: varchar, title_ru: varchar, page_title: varchar,
+                     page_description: varchar}
+  - name: load_config
+    config:
+      enabled: "{{ var('suite', 'recon') == 'load' }}"
+      tags: [load_check]
+      column_types: {dataset: varchar, entity: varchar, key: varchar, columns: varchar, measures: varchar,
+                     period_column: varchar, parent_entity: varchar, parent_column: varchar, ref_entity: varchar,
+                     ref_column: varchar, ref_number_column: varchar, modified_column: varchar,
+                     export_column: varchar, run_column: varchar, batch_column: varchar, order_column: varchar,
+                     code_column: varchar, history_relation: varchar, money_scale_target: varchar}
+  - name: expected_codes
+    config:
+      enabled: "{{ var('suite', 'recon') == 'load' }}"
+      tags: [load_check]
+      column_types: {dataset: varchar, entity: varchar, column_name: varchar, code: varchar, value: varchar}
