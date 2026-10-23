@@ -9,3 +9,7 @@ data/*/recon.duckdb.wal
 .pytest_cache/
 dbt/.user.yml
 .DS_Store
+
+# Airflow for the load check DAG: its own environment and state, kept out of git
+.venv-airflow/
+.airflow/

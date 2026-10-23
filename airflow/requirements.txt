@@ -1,0 +1,5 @@
+# Airflow for the load check DAG, in its own environment (.venv-airflow), installed with the constraints file:
+#   uv venv .venv-airflow --python 3.13
+#   uv pip install --python .venv-airflow/bin/python -r airflow/requirements.txt \
+#     --constraint https://raw.githubusercontent.com/apache/airflow/constraints-3.3.2/constraints-3.13.txt
+apache-airflow==3.3.2
