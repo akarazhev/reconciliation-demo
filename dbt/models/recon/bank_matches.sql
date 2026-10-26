@@ -1,17 +1,18 @@
 -- Bank level (spec §5.3): by the payout id in the reference first, then by amount within the
 -- window. Both methods require one candidate on each side; ambiguous references never fall back
 -- to amount matching. Difference = bank minus payout.
--- Payouts the month before left in transit (demo 1, October) come from that month's own output, the opening
--- list, and are matched too. Each was in transit at the start (+ payout); then it arrives, arrives with another
--- amount, is booked after this period or never. Without an opening list there are none.
+-- Payouts the month before left out of the bank (in transit, missing or ambiguous; demo 1, October) come from
+-- that month's own output, the opening list, and are matched too, at the amount of the platform's payout record.
+-- Each was not in the bank at the start (+ payout); then it arrives, arrives with another amount, is booked after
+-- this period or never. opening_payouts_match_records checks the list against the records. Without a list, none.
 with payouts as (
     select payout_id, paid_on, amount_payout as amount, false as earlier
     from {{ ref('payout_checks') }}
     union all
-    select o.key, coalesce(p.paid_on, cast('{{ var("period_start") }}' as date)), -o.difference, true
+    select o.key, coalesce(p.paid_on, cast('{{ var("period_start") }}' as date)), coalesce(p.amount, -o.difference), true
     from {{ ref('stg_opening') }} as o
     left join {{ ref('payouts') }} as p on p.payout_id = o.key
-    where o.level = 'bank' and o.cause = 'in_transit'
+    where o.level = 'bank'
 ),
 deposits as (
     select deposit_id, booked_on, amount, reference
@@ -76,7 +77,7 @@ rows as (
 
     union all
 
-    -- an earlier payout was in transit at the start; the rows above and below say what became of it
+    -- an earlier payout was not in the bank at the start; the rows above and below say what became of it
     select p.payout_id, p.amount, cast(null as decimal(18, 2)), cast(null as date), 'opening_in_transit', p.amount
     from payouts as p
     where p.earlier

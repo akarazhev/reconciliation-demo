@@ -180,7 +180,7 @@ EN_CAUSES = {
     "amount_mismatch": "amount mismatch",
     "payout_mismatch": "payout differs from its lines",
     "in_transit": "in transit",
-    "opening_in_transit": "in transit at the start",
+    "opening_in_transit": "not in the bank at the start",
     "missing_deposit": "no deposit",
     "unexpected_deposit": "deposit without a payout",
     "ambiguous_deposit": "ambiguous deposit",
@@ -205,7 +205,7 @@ RU_CAUSES = {
     "amount_mismatch": "сумма не совпадает",
     "payout_mismatch": "выплата не равна строкам",
     "in_transit": "деньги в пути",
-    "opening_in_transit": "в пути на начало",
+    "opening_in_transit": "не в банке на начало",
     "missing_deposit": "нет поступления",
     "unexpected_deposit": "поступление без выплаты",
     "ambiguous_deposit": "неоднозначное поступление",
@@ -230,8 +230,8 @@ RU_EXPLANATIONS = {
     "Amounts differ; no other cause found.": "Суммы различаются, другой причины не найдено.",
     "Payout amount differs from the sum of its lines.": "Сумма выплаты не равна сумме её строк.",
     "Payout booked by the bank after the period end.": "Выплата пришла в банк после конца периода.",
-    "Payout of an earlier period, in transit at the period start.":
-        "Выплата прошлого периода, на начало периода была в пути.",
+    "Payout of an earlier period, not in the bank at the period start.":
+        "Выплата прошлого периода, на начало периода её не было в банке.",
     "Payout not found in the bank statement.": "Выплаты нет в банковской выписке.",
     "Bank deposit with no matching payout.": "Поступление в банке без подходящей выплаты.",
     "Several candidates with the same amount; not matched automatically.":

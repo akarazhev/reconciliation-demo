@@ -57,7 +57,7 @@ select
                                          else 'Amounts differ; no other cause found.' end
         when 'payout_mismatch' then 'Payout amount differs from the sum of its lines.'
         when 'in_transit' then 'Payout booked by the bank after the period end.'
-        when 'opening_in_transit' then 'Payout of an earlier period, in transit at the period start.'
+        when 'opening_in_transit' then 'Payout of an earlier period, not in the bank at the period start.'
         when 'missing_deposit' then 'Payout not found in the bank statement.'
         when 'unexpected_deposit' then 'Bank deposit with no matching payout.'
         when 'ambiguous_deposit' then 'Several candidates with the same amount; not matched automatically.'

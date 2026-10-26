@@ -1,7 +1,8 @@
 """Write a month's opening list: python opening.py <last month's dataset> <this month's dataset>.
 
 The list is what the last month's reconciliation left open, read from its data/<dataset>/recon.duckdb: the
-operation lines, and the payouts that were not in the bank by its end. So the next month starts from the
+operation lines, and the payouts that were not in the bank by its end: in transit, missing or ambiguous, until
+they settle. So the next month starts from the
 reconciliation's own output and never from the answer key. Every line is stamped with that month (a third month
 would need the roll-forward's own months; not built yet).
 """
@@ -17,8 +18,10 @@ ROOT = Path(__file__).resolve().parent
 def write_opening(db: Path, month: str, out: Path) -> None:
     con = duckdb.connect(str(db), read_only=True)
     try:
-        rows = con.execute("select level, key, kind, cause, difference from main.discrepancies "
-                           "where level = 'operation' or cause = 'in_transit' order by level, key, kind").fetchall()
+        rows = con.execute(
+            "select level, key, kind, cause, difference from main.discrepancies where level = 'operation' "
+            "or (amount_payout is not null and cause in ('in_transit', 'missing_deposit', 'ambiguous_deposit')) "
+            "order by level, key, kind").fetchall()
     finally:
         con.close()
     out.parent.mkdir(parents=True, exist_ok=True)

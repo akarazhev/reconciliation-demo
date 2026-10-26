@@ -121,7 +121,7 @@ unit_tests:
       rows:
         - {discrepancy_id: "t|operation|amount_mismatch|EDIT|sale", effect: short, explanation: "Amounts differ; no other cause found. Digits transposed: likely a manual edit."}
         - {discrepancy_id: "t|bank|in_transit|po_9|payout", effect: timing, explanation: "Payout booked by the bank after the period end."}
-        - {discrepancy_id: "t|bank|opening_in_transit|po_8|payout", effect: timing, explanation: "Payout of an earlier period, in transit at the period start."}
+        - {discrepancy_id: "t|bank|opening_in_transit|po_8|payout", effect: timing, explanation: "Payout of an earlier period, not in the bank at the period start."}
         - {discrepancy_id: "t|operation|unbooked_return|du_won|charge", effect: over, explanation: "Platform returned money it had taken; not booked in the ledger."}
         - {discrepancy_id: "t|operation|fx|EU-R|refund", effect: over, explanation: "Refund in another currency: the platform used the rate of the refund day, the books the original amount."}
         - {discrepancy_id: "t|operation|fx|EU-S|sale", effect: short, explanation: "Customer paid in another currency; the books likely used another rate."}
@@ -234,12 +234,16 @@ unit_tests:
           - {dataset: t, payout_id: po_late, paid_on: 2026-10-01, period_from: 2026-09-30, period_to: 2026-09-30, amount: 700.00, currency: EUR}
           - {dataset: t, payout_id: po_lost, paid_on: 2026-10-01, period_from: 2026-09-30, period_to: 2026-09-30, amount: 800.00, currency: EUR}
           - {dataset: t, payout_id: po_old, paid_on: 2026-09-30, period_from: 2026-09-29, period_to: 2026-09-29, amount: 900.00, currency: EUR}
+          - {dataset: t, payout_id: po_gone, paid_on: 2026-09-15, period_from: 2026-09-14, period_to: 2026-09-14, amount: 300.00, currency: EUR}
+          - {dataset: t, payout_id: po_rec, paid_on: 2026-10-01, period_from: 2026-09-30, period_to: 2026-09-30, amount: 500.00, currency: EUR}
       - input: ref('stg_opening')
         rows:
           - {dataset: t, level: bank, key: po_sep, kind: payout, cause: in_transit, difference: -600.00, month: '2026-09'}
           - {dataset: t, level: bank, key: po_short, kind: payout, cause: in_transit, difference: -650.00, month: '2026-09'}
           - {dataset: t, level: bank, key: po_late, kind: payout, cause: in_transit, difference: -700.00, month: '2026-09'}
           - {dataset: t, level: bank, key: po_lost, kind: payout, cause: in_transit, difference: -800.00, month: '2026-09'}
+          - {dataset: t, level: bank, key: po_gone, kind: payout, cause: missing_deposit, difference: -300.00, month: '2026-09'}
+          - {dataset: t, level: bank, key: po_rec, kind: payout, cause: in_transit, difference: -400.00, month: '2026-09'}
           - {dataset: t, level: operation, key: EU-1, kind: sale, cause: duplicate, difference: -50.00, month: '2026-09'}
       - input: ref('deposits')
         rows:
@@ -249,6 +253,8 @@ unit_tests:
           - {dataset: t, deposit_id: BK-old, booked_on: 2026-10-01, amount: 900.00, currency: EUR, reference: STRIPE PAYOUT po_old}
           - {dataset: t, deposit_id: BK-oct, booked_on: 2026-10-02, amount: 100.00, currency: EUR, reference: STRIPE PAYOUT po_oct}
           - {dataset: t, deposit_id: BK-end, booked_on: 2026-11-02, amount: 200.00, currency: EUR, reference: STRIPE PAYOUT po_end}
+          - {dataset: t, deposit_id: BK-gone, booked_on: 2026-10-05, amount: 300.00, currency: EUR, reference: STRIPE PAYOUT po_gone}
+          - {dataset: t, deposit_id: BK-rec, booked_on: 2026-10-01, amount: 500.00, currency: EUR, reference: STRIPE PAYOUT po_rec}
     expect:
       rows:
         - {key: po_sep, cause: opening_in_transit, difference: 600.00}
@@ -262,6 +268,10 @@ unit_tests:
         - {key: BK-old, cause: unexpected_deposit, difference: 900.00}
         - {key: po_oct, cause: null, difference: 0.00}
         - {key: po_end, cause: in_transit, difference: -200.00}
+        - {key: po_gone, cause: opening_in_transit, difference: 300.00}
+        - {key: po_gone, cause: null, difference: 0.00}
+        - {key: po_rec, cause: opening_in_transit, difference: 500.00}
+        - {key: po_rec, cause: null, difference: 0.00}
 
   - name: rollforward_joins_the_opening_list_and_the_period_by_line
     description: >
