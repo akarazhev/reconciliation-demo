@@ -40,7 +40,9 @@ select
         when 'duplicate' then 'Booked twice in the ledger; the platform has it once.'
         when 'missing_in_ledger' then 'On the platform, not in the ledger.'
         when 'missing_at_platform' then 'In the ledger, not on the platform.'
-        when 'unbooked' then 'Platform charge not booked in the ledger.'
+        when 'unbooked' then case when difference > 0
+                                  then 'Platform returned money it had taken; not booked in the ledger.'
+                                  else 'Platform charge not booked in the ledger.' end
         when 'fee' then case when coalesce(amount_ledger, 0) = 0
                              then 'Platform fee not booked in the ledger.'
                              else 'Platform fee differs from the booked fee.' end
@@ -52,7 +54,9 @@ select
                                          then 'Amounts differ; no other cause found. Digits transposed: likely a manual edit.'
                                          else 'Amounts differ; no other cause found.' end
         when 'payout_mismatch' then 'Payout amount differs from the sum of its lines.'
-        when 'in_transit' then 'September payout booked by the bank in October.'
+        when 'in_transit' then case when difference > 0
+                                    then 'Payout for operations of an earlier period, booked by the bank in this one.'
+                                    else 'Payout for operations of this period, booked by the bank after the period end.' end
         when 'missing_deposit' then 'Payout not found in the bank statement.'
         when 'unexpected_deposit' then 'Bank deposit with no matching payout.'
         when 'ambiguous_deposit' then 'Several candidates with the same amount; not matched automatically.'

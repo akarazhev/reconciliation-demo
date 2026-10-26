@@ -44,7 +44,7 @@ SQL = (report.ROOT / "dbt" / "models" / "recon" / "discrepancies.sql").read_text
 def test_every_sql_explanation_has_a_russian_translation():
     block = SQL[SQL.index("case cause"):SQL.index("as explanation")]
     explanations = set(re.findall(r"'([A-Z][^']*\.)'", block))
-    assert len(explanations) == 16
+    assert len(explanations) == 18
     assert explanations <= set(report.RU_EXPLANATIONS), explanations - set(report.RU_EXPLANATIONS)
 
 

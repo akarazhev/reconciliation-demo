@@ -56,8 +56,9 @@ select
         when left_ledger = 0 then 'missing_in_ledger'
         when rest_ledger = rest_platform then null
         when kind = 'fee' then 'fee'
-        when kind = 'refund' and abs(rest_platform) < abs(rest_ledger) then 'partial'
+        -- A foreign-currency refund comes back at the refund day's rate: smaller is a rate, not a partial refund.
         when foreign_currency then 'fx'
+        when kind = 'refund' and abs(rest_platform) < abs(rest_ledger) then 'partial'
         else 'amount_mismatch'
     end as cause
 from pairs

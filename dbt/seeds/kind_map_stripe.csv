@@ -4,3 +4,4 @@ charge,fee,fee
 refund,gross,refund
 refund,fee,fee
 dispute,net,charge
+dispute_reversal,net,charge

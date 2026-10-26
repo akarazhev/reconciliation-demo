@@ -1,9 +1,16 @@
 -- Bank level (spec §5.3): by the payout id in the reference first, then by amount within the
 -- window. Both methods require one candidate on each side; ambiguous references never fall back
 -- to amount matching. Difference = bank minus payout.
+-- A payout of an earlier period that the bank books in this one (demo 1, October) is matched too: its deposit
+-- is in this period's bank total but the payout is not in this period's payouts, so it is timing, + deposit.
 with payouts as (
-    select payout_id, paid_on, amount_payout as amount
+    select payout_id, paid_on, amount_payout as amount, false as earlier
     from {{ ref('payout_checks') }}
+    union all
+    select payout_id, paid_on, amount, true
+    from {{ ref('payouts') }}
+    where period_to < cast('{{ var("period_start") }}' as date)
+      and paid_on between cast('{{ var("period_start") }}' as date) and cast('{{ var("statement_end") }}' as date)
 ),
 deposits as (
     select deposit_id, booked_on, amount, reference
@@ -58,13 +65,16 @@ rows as (
         p.amount as amount_payout,
         d.amount as amount_bank,
         d.booked_on,
-        case when d.booked_on > cast('{{ var("period_end") }}' as date) then 'in_transit'
+        case when p.earlier or d.booked_on > cast('{{ var("period_end") }}' as date) then 'in_transit'
              when d.amount <> p.amount then 'amount_mismatch' end as cause,
-        case when d.booked_on > cast('{{ var("period_end") }}' as date) then -p.amount
+        case when p.earlier then d.amount
+             when d.booked_on > cast('{{ var("period_end") }}' as date) then -p.amount
              else d.amount - p.amount end as difference
     from matched as m
     join payouts as p on p.payout_id = m.payout_id
     join deposits as d on d.deposit_id = m.deposit_id
+    -- an earlier payout booked after this period too belongs to neither total here
+    where not (p.earlier and d.booked_on > cast('{{ var("period_end") }}' as date))
 
     union all
 
@@ -79,6 +89,7 @@ rows as (
         -p.amount
     from payouts as p
     where p.payout_id not in (select payout_id from matched)
+      and not p.earlier
 
     union all
 

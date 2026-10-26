@@ -177,6 +177,7 @@ RU_EXPLANATIONS = {
     "On the platform, not in the ledger.": "Есть на площадке, нет в учёте.",
     "In the ledger, not on the platform.": "Есть в учёте, нет на площадке.",
     "Platform charge not booked in the ledger.": "Удержание площадки не проведено в учёте.",
+    "Platform returned money it had taken; not booked in the ledger.": "Площадка вернула удержанное; в учёте не проведено.",
     "Platform fee not booked in the ledger.": "Комиссия площадки не проведена в учёте.",
     "Platform fee differs from the booked fee.": "Комиссия площадки отличается от проведённой в учёте.",
     "Platform refunded less than the ledger booked.": "Площадка вернула меньше, чем проведено в учёте.",
@@ -187,7 +188,10 @@ RU_EXPLANATIONS = {
         "Суммы различаются, другой причины не найдено. Цифры переставлены — вероятно, ручная правка.",
     "Amounts differ; no other cause found.": "Суммы различаются, другой причины не найдено.",
     "Payout amount differs from the sum of its lines.": "Сумма выплаты не равна сумме её строк.",
-    "September payout booked by the bank in October.": "Выплата за сентябрь пришла в банк в октябре.",
+    "Payout for operations of this period, booked by the bank after the period end.":
+        "Выплата за операции этого периода пришла в банк после его конца.",
+    "Payout for operations of an earlier period, booked by the bank in this one.":
+        "Выплата за операции прошлого периода пришла в банк в этом.",
     "Payout not found in the bank statement.": "Выплаты нет в банковской выписке.",
     "Bank deposit with no matching payout.": "Поступление в банке без подходящей выплаты.",
     "Several candidates with the same amount; not matched automatically.":
