@@ -9,12 +9,14 @@ uv sync --frozen
 uv run python generate.py
 
 first=""
-while IFS=, read -r dataset platform currency counterparty title; do
+# Each dataset reconciles its own period (columns 5-7).
+while IFS=, read -r dataset platform currency counterparty period_start period_end statement_end opening_from rest; do
   [ "$dataset" = "dataset" ] && continue
   first="${first:-$dataset:$platform}"
   rm -f "data/$dataset/recon.duckdb" "data/$dataset/recon.duckdb.wal"
   start=$SECONDS
-  uv run dbt build --project-dir dbt --profiles-dir dbt --vars "{dataset: $dataset, platform: $platform}"
+  uv run dbt build --project-dir dbt --profiles-dir dbt --vars "{dataset: $dataset, platform: $platform, \
+period_start: '$period_start', period_end: '$period_end', statement_end: '$statement_end'}"
   echo "$dataset: $((SECONDS - start)) s"
 done < dbt/seeds/datasets.csv
 
