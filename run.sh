@@ -9,6 +9,7 @@ uv sync --frozen
 uv run python generate.py
 
 first=""
+built=" "
 # Each dataset reconciles its own period (columns 5-7).
 while IFS=, read -r dataset platform currency counterparty period_start period_end statement_end opening_from rest; do
   [ "$dataset" = "dataset" ] && continue
@@ -18,11 +19,16 @@ while IFS=, read -r dataset platform currency counterparty period_start period_e
   # A month that continues another starts from that month's output (column 8): it must be built above.
   opening=false
   if [ -n "$opening_from" ]; then
+    case "$built" in
+      *" $opening_from "*) ;;
+      *) echo "$dataset: $opening_from must be built above it in datasets.csv" >&2; exit 1 ;;
+    esac
     uv run python opening.py "$opening_from" "$dataset"
     opening=true
   fi
   uv run dbt build --project-dir dbt --profiles-dir dbt --vars "{dataset: $dataset, platform: $platform, \
 period_start: '$period_start', period_end: '$period_end', statement_end: '$statement_end', opening: $opening}"
+  built="$built$dataset "
   echo "$dataset: $((SECONDS - start)) s"
 done < dbt/seeds/datasets.csv
 

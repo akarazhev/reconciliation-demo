@@ -35,28 +35,29 @@ select
     dataset, level, cause, key, kind,
     amount_ledger, amount_platform, amount_payout, amount_bank,
     difference,
-    case when cause = 'in_transit' then 'timing' when difference < 0 then 'short' else 'over' end as effect,
+    case when cause in ('in_transit', 'opening_in_transit') then 'timing' when difference < 0 then 'short' else 'over' end
+        as effect,
     case cause
         when 'duplicate' then 'Booked twice in the ledger; the platform has it once.'
         when 'missing_in_ledger' then 'On the platform, not in the ledger.'
         when 'missing_at_platform' then 'In the ledger, not on the platform.'
-        when 'unbooked' then case when difference > 0
-                                  then 'Platform returned money it had taken; not booked in the ledger.'
-                                  else 'Platform charge not booked in the ledger.' end
+        when 'unbooked' then 'Platform charge not booked in the ledger.'
+        when 'unbooked_return' then 'Platform returned money it had taken; not booked in the ledger.'
         when 'fee' then case when coalesce(amount_ledger, 0) = 0
                              then 'Platform fee not booked in the ledger.'
                              else 'Platform fee differs from the booked fee.' end
         when 'partial' then 'Platform refunded less than the ledger booked.'
-        when 'fx' then 'Customer paid in another currency; the books likely used another rate.'
+        when 'fx' then case when kind = 'refund'
+                            then 'Refund in another currency: the platform used the rate of the refund day, the books the original amount.'
+                            else 'Customer paid in another currency; the books likely used another rate.' end
         when 'amount_mismatch' then case when level = 'bank'
                                          then 'Deposit amount differs from the payout.'
                                          when {{ same_digits('rest_ledger', 'rest_platform') }}
                                          then 'Amounts differ; no other cause found. Digits transposed: likely a manual edit.'
                                          else 'Amounts differ; no other cause found.' end
         when 'payout_mismatch' then 'Payout amount differs from the sum of its lines.'
-        when 'in_transit' then case when difference > 0
-                                    then 'Payout for operations of an earlier period, booked by the bank in this one.'
-                                    else 'Payout for operations of this period, booked by the bank after the period end.' end
+        when 'in_transit' then 'Payout booked by the bank after the period end.'
+        when 'opening_in_transit' then 'Payout of an earlier period, in transit at the period start.'
         when 'missing_deposit' then 'Payout not found in the bank statement.'
         when 'unexpected_deposit' then 'Bank deposit with no matching payout.'
         when 'ambiguous_deposit' then 'Several candidates with the same amount; not matched automatically.'

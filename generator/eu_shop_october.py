@@ -4,6 +4,7 @@ October brings no new ordinary errors. What it plants sits on the month ends: a 
 on 6 October at the October rate and booked at the original amount (fx); a September dispute won on 14 October,
 its amount returned and not booked, the dispute fee kept (unbooked); payouts in transit on 30 September and on
 31 October. truth.csv holds October's discrepancies only: September's are carried over by the reconciliation.
+The data stops on 31 October, so Monday 2 November's payout holds only Saturday's operations.
 """
 import datetime as dt
 import random
@@ -87,8 +88,8 @@ def generate(out: Path) -> None:
     arrived = next(p for p in september.payouts if p["arrival"] > eu_shop.LAST_DAY)
     truth = [
         Truth("operation", "fx", paid.order_id, "refund", fx_refund.gross + paid.gross),
-        Truth("operation", "unbooked", won.source_id, "charge", won.net),
-        Truth("bank", "in_transit", arrived["id"], "payout", arrived["amount"]),
+        Truth("operation", "unbooked_return", won.source_id, "charge", won.net),
+        Truth("bank", "opening_in_transit", arrived["id"], "payout", arrived["amount"]),
     ]
     truth += [Truth("bank", "in_transit", p["id"], "payout", -p["amount"]) for p in payouts if p["arrival"] > LAST_DAY]
 

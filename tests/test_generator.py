@@ -83,14 +83,15 @@ def test_october_plants_only_the_month_end_cases(tmp_path):
     september = read(tmp_path / "sep" / "truth.csv")
     october = read(tmp_path / "oct" / "truth.csv")
     assert Counter((r["level"], r["cause"], r["kind"]) for r in october) == {
-        ("operation", "fx", "refund"): 1, ("operation", "unbooked", "charge"): 1, ("bank", "in_transit", "payout"): 3}
-    won = next(r for r in october if r["cause"] == "unbooked")
+        ("operation", "fx", "refund"): 1, ("operation", "unbooked_return", "charge"): 1,
+        ("bank", "opening_in_transit", "payout"): 1, ("bank", "in_transit", "payout"): 2}
+    won = next(r for r in october if r["cause"] == "unbooked_return")
     lost = next(r for r in september if r["key"] == won["key"])
     assert Decimal(lost["difference"]) + Decimal(won["difference"]) == -eu_shop.DISPUTE_FEE
     arrived = next(r for r in september if r["cause"] == "in_transit")
-    transit = {r["key"]: Decimal(r["difference"]) for r in october if r["cause"] == "in_transit"}
-    assert transit.pop(arrived["key"]) == -Decimal(arrived["difference"]) > 0
-    assert len(transit) == 2 and all(v < 0 for v in transit.values())
+    opened = next(r for r in october if r["cause"] == "opening_in_transit")
+    assert (opened["key"], Decimal(opened["difference"])) == (arrived["key"], -Decimal(arrived["difference"]))
+    assert all(Decimal(r["difference"]) < 0 for r in october if r["cause"] == "in_transit")
     refund = next(r for r in october if r["cause"] == "fx")
     charge = next(r for r in read(tmp_path / "oct" / "stripe_balance.csv")
                   if r["payment_metadata[order_id]"] == refund["key"] and r["reporting_category"] == "charge")

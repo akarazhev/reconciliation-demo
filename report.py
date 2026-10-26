@@ -110,7 +110,7 @@ TEXTS = {
         "rollforward": "Roll-forward: platform minus books",
         "rollforward_head": ("", "Lines", "Amount"),
         "open_at": "Open at {day}",
-        "new_in": "New in {month}",
+        "changes_in": "Changes in {month}",
         "rollforward_note": "Each amount is recomputed from every line of both months and agrees to the cent.",
         "timing": "Payouts not in the bank yet",
         "timing_at": "At {day}",
@@ -155,7 +155,7 @@ TEXTS = {
         "rollforward": "Перенос: площадка минус учёт",
         "rollforward_head": ("", "Строк", "Сумма"),
         "open_at": "Открыто на {day}",
-        "new_in": "Новое за {month}",
+        "changes_in": "Изменения за {month}",
         "rollforward_note": "Каждая сумма пересчитана по всем строкам обоих месяцев и сходится до копейки.",
         "timing": "Выплаты, которых ещё нет в банке",
         "timing_at": "На {day}",
@@ -173,12 +173,14 @@ EN_CAUSES = {
     "missing_in_ledger": "missing in the ledger",
     "missing_at_platform": "missing on the platform",
     "unbooked": "deduction not booked",
+    "unbooked_return": "return not booked",
     "fee": "fee not booked",
     "partial": "partial refund",
     "fx": "currency rate",
     "amount_mismatch": "amount mismatch",
     "payout_mismatch": "payout differs from its lines",
     "in_transit": "in transit",
+    "opening_in_transit": "in transit at the start",
     "missing_deposit": "no deposit",
     "unexpected_deposit": "deposit without a payout",
     "ambiguous_deposit": "ambiguous deposit",
@@ -196,12 +198,14 @@ RU_CAUSES = {
     "missing_in_ledger": "нет в учёте",
     "missing_at_platform": "нет на площадке",
     "unbooked": "удержание не проведено",
+    "unbooked_return": "возврат не проведён",
     "fee": "комиссия",
     "partial": "частичный возврат",
     "fx": "курс валюты",
     "amount_mismatch": "сумма не совпадает",
     "payout_mismatch": "выплата не равна строкам",
     "in_transit": "деньги в пути",
+    "opening_in_transit": "в пути на начало",
     "missing_deposit": "нет поступления",
     "unexpected_deposit": "поступление без выплаты",
     "ambiguous_deposit": "неоднозначное поступление",
@@ -218,15 +222,16 @@ RU_EXPLANATIONS = {
     "Platform refunded less than the ledger booked.": "Площадка вернула меньше, чем проведено в учёте.",
     "Customer paid in another currency; the books likely used another rate.":
         "Покупатель платил в другой валюте; вероятно, в учёте взят другой курс.",
+    "Refund in another currency: the platform used the rate of the refund day, the books the original amount.":
+        "Возврат в другой валюте: площадка взяла курс дня возврата, учёт взял исходную сумму.",
     "Deposit amount differs from the payout.": "Сумма поступления отличается от выплаты.",
     "Amounts differ; no other cause found. Digits transposed: likely a manual edit.":
         "Суммы различаются, другой причины не найдено. Цифры переставлены — вероятно, ручная правка.",
     "Amounts differ; no other cause found.": "Суммы различаются, другой причины не найдено.",
     "Payout amount differs from the sum of its lines.": "Сумма выплаты не равна сумме её строк.",
-    "Payout for operations of this period, booked by the bank after the period end.":
-        "Выплата за операции этого периода пришла в банк после его конца.",
-    "Payout for operations of an earlier period, booked by the bank in this one.":
-        "Выплата за операции прошлого периода пришла в банк в этом.",
+    "Payout booked by the bank after the period end.": "Выплата пришла в банк после конца периода.",
+    "Payout of an earlier period, in transit at the period start.":
+        "Выплата прошлого периода, на начало периода была в пути.",
     "Payout not found in the bank statement.": "Выплаты нет в банковской выписке.",
     "Bank deposit with no matching payout.": "Поступление в банке без подходящей выплаты.",
     "Several candidates with the same amount; not matched automatically.":
@@ -426,7 +431,7 @@ def render_month_page(month: dict, companies: list[dict]) -> str:
         return sum(1 for line in lines if line[column] != 0)
 
     steps = [(t["open_at"].format(day=day(start - dt.timedelta(1))), count(5), totals["opening"], ""),
-             (t["new_in"].format(month=name), count(6), totals["period"], ""),
+             (t["changes_in"].format(month=name), count(6), totals["period"], ""),
              (t["open_at"].format(day=day(end)), count(7), totals["closing"], "total")]
     rollforward = "".join(f'<tr class="{css}"><td>{e(label)}</td><td class="num">{n}</td>'
                           f'<td class="num">{e(fmt(amount, cur, lang))}</td></tr>' for label, n, amount, css in steps)

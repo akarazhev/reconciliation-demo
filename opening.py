@@ -1,8 +1,9 @@
 """Write a month's opening list: python opening.py <last month's dataset> <this month's dataset>.
 
-The list is what the last month's reconciliation left open at operation level, read from its
-data/<dataset>/recon.duckdb, so the next month starts from the reconciliation's own output and never from the
-answer key. Each line keeps the month it was first found in.
+The list is what the last month's reconciliation left open, read from its data/<dataset>/recon.duckdb: the
+operation lines, and the payouts that were not in the bank by its end. So the next month starts from the
+reconciliation's own output and never from the answer key. Every line is stamped with that month (a third month
+would need the roll-forward's own months; not built yet).
 """
 import csv
 import sys
@@ -16,15 +17,16 @@ ROOT = Path(__file__).resolve().parent
 def write_opening(db: Path, month: str, out: Path) -> None:
     con = duckdb.connect(str(db), read_only=True)
     try:
-        rows = con.execute("select key, kind, cause, difference from main.discrepancies "
-                           "where level = 'operation' order by key, kind").fetchall()
+        rows = con.execute("select level, key, kind, cause, difference from main.discrepancies "
+                           "where level = 'operation' or cause = 'in_transit' order by level, key, kind").fetchall()
     finally:
         con.close()
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f, lineterminator="\n")
-        writer.writerow(["key", "kind", "cause", "difference", "month"])
-        writer.writerows([key, kind, cause, f"{difference:.2f}", month] for key, kind, cause, difference in rows)
+        writer.writerow(["level", "key", "kind", "cause", "difference", "month"])
+        writer.writerows([level, key, kind, cause, f"{difference:.2f}", month]
+                         for level, key, kind, cause, difference in rows)
 
 
 def main() -> None:

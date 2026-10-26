@@ -51,6 +51,7 @@ select
         when left_ledger = 0 and left_platform = 0 then null
         when left_platform = 0 and ledger_rest_repeats_paired then 'duplicate'
         when left_platform = 0 then 'missing_at_platform'
+        when left_ledger = 0 and kind = 'charge' and rest_platform > 0 then 'unbooked_return'
         when left_ledger = 0 and kind = 'charge' then 'unbooked'
         when left_ledger = 0 and kind = 'fee' then 'fee'
         when left_ledger = 0 then 'missing_in_ledger'

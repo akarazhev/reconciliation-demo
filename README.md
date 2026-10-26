@@ -53,22 +53,27 @@ Everything is SQL in dbt on DuckDB, amounts are `DECIMAL(18,2)`. There are four 
 ## The second month
 
 The EU shop also closes October (`data/eu_shop_october`, page `/stripe/october/`). September is the same, row
-for row; October adds no new errors of its own. What is left on 31 October comes from two places:
+for row; October adds no new errors of its own. The difference between Stripe and the books on 31 October
+comes from two places:
 
 - September's discrepancies that nobody fixed. October starts from September's own output, written by
   `opening.py` to `opening.csv`, not from `truth.csv`.
-- Three cases that cross the month end: a USD charge refunded in October at the October rate, a September
-  dispute won in October (the amount comes back, the €15 fee doesn't), and payouts still on their way to the
-  bank on 30 September and 31 October.
+- Two cases that cross the month end: a USD charge refunded in October at the October rate, and a September
+  dispute won in October (the amount comes back, the €15 fee doesn't).
 
-The roll-forward is open on 30 September + new in October = open on 31 October. The run recomputes each of
-these from all the lines of both months and fails if any of them differs.
+The roll-forward is open on 30 September + changes in October = open on 31 October. The run recomputes the
+opening and the closing of every line from all the lines of both months and fails if one differs.
 
 | | Lines | Amount |
 |---|---:|---:|
 | Open on 30 September | 17 | −€149.21 |
-| New in October | 2 | €37.44 |
+| Changes in October | 2: one new line, one September line | €37.44 |
 | Open on 31 October | 18 | −€111.77 |
+
+Payouts still on their way to the bank are timing, not a difference in the books, and are shown apart:
+€3,347.78 on 30 September (it came from September's output too and arrived on 1 October) and €8,598.59 on
+31 October. The data stops on 31 October, so Monday 2 November's payout holds only Saturday's operations; a
+payout that also took November operations is not handled.
 
 ## Adding a format
 

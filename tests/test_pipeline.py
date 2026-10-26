@@ -41,10 +41,11 @@ def test_ozon_amounts_parse_exactly():
 
 def test_october_rolls_september_forward():
     con = connect("eu_shop_october")
-    totals = con.execute("select label, amount, amount_from_lines from main.rollforward_totals").fetchall()
+    totals = con.execute("select label, amount, amount_check from main.rollforward_totals").fetchall()
     assert {label for label, _, _ in totals} == {"opening", "period", "closing", "in_transit_opening",
                                                 "in_transit_closing"}
-    assert all(amount == from_lines for _, amount, from_lines in totals), totals
+    assert all(check is None or amount == check for _, amount, check in totals), totals
+    assert dict((label, amount) for label, amount, _ in totals)["in_transit_opening"] == Decimal("3347.78")
     lines = con.execute("select key, cause_opening, cause_period, since, opening, period, closing "
                         "from main.rollforward").fetchall()
     with (ROOT / "data" / "eu_shop" / "truth.csv").open(encoding="utf-8", newline="") as f:
@@ -52,4 +53,4 @@ def test_october_rolls_september_forward():
     assert sum(1 for line in lines if line[1]) == len(september)
     assert sorted(line[3] for line in lines if line[2] and not line[1]) == ["2026-10"]
     won = next(line for line in lines if line[1] and line[2])
-    assert (won[1], won[2], won[6]) == ("unbooked", "unbooked", Decimal("-15.00"))
+    assert (won[1], won[2], won[6]) == ("unbooked", "unbooked_return", Decimal("-15.00"))

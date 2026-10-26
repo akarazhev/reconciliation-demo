@@ -79,6 +79,8 @@ unit_tests:
           - {dataset: t, payout_id: P-oct, paid_on: 2026-10-01, amount_payout: 600.00, amount_lines: 600.00, difference: 0.00}
       - input: ref('payouts')
         rows: []
+      - input: ref('stg_opening')
+        rows: []
       - input: ref('deposits')
         rows:
           - {dataset: t, deposit_id: BK-ok, booked_on: 2026-09-04, amount: 100.00, currency: EUR, reference: STRIPE PAYOUT po_ok}
@@ -105,20 +107,24 @@ unit_tests:
         rows:
           - {dataset: t, key: EDIT, kind: sale, amount_ledger: 192.00, amount_platform: 129.00, rest_ledger: 192.00, rest_platform: 129.00, difference: -63.00, cause: amount_mismatch}
           - {dataset: t, key: OK, kind: sale, amount_ledger: 10.00, amount_platform: 10.00, rest_ledger: 0.00, rest_platform: 0.00, difference: 0.00, cause: null}
-          - {dataset: t, key: du_won, kind: charge, amount_ledger: 0.00, amount_platform: 30.85, rest_ledger: 0.00, rest_platform: 30.85, difference: 30.85, cause: unbooked}
+          - {dataset: t, key: du_won, kind: charge, amount_ledger: 0.00, amount_platform: 30.85, rest_ledger: 0.00, rest_platform: 30.85, difference: 30.85, cause: unbooked_return}
+          - {dataset: t, key: EU-R, kind: refund, amount_ledger: -100.00, amount_platform: -98.32, rest_ledger: -100.00, rest_platform: -98.32, difference: 1.68, cause: fx}
+          - {dataset: t, key: EU-S, kind: sale, amount_ledger: 95.00, amount_platform: 93.13, rest_ledger: 95.00, rest_platform: 93.13, difference: -1.87, cause: fx}
           - {dataset: t, key: du_lost, kind: charge, amount_ledger: 0.00, amount_platform: -45.85, rest_ledger: 0.00, rest_platform: -45.85, difference: -45.85, cause: unbooked}
       - input: ref('payout_checks')
         rows: []
       - input: ref('bank_matches')
         rows:
           - {dataset: t, key: po_9, amount_payout: 600.00, amount_bank: 600.00, booked_on: 2026-10-01, cause: in_transit, difference: -600.00}
-          - {dataset: t, key: po_8, amount_payout: 500.00, amount_bank: 500.00, booked_on: 2026-09-01, cause: in_transit, difference: 500.00}
+          - {dataset: t, key: po_8, amount_payout: 500.00, amount_bank: 500.00, booked_on: 2026-09-01, cause: opening_in_transit, difference: 500.00}
     expect:
       rows:
         - {discrepancy_id: "t|operation|amount_mismatch|EDIT|sale", effect: short, explanation: "Amounts differ; no other cause found. Digits transposed: likely a manual edit."}
-        - {discrepancy_id: "t|bank|in_transit|po_9|payout", effect: timing, explanation: "Payout for operations of this period, booked by the bank after the period end."}
-        - {discrepancy_id: "t|bank|in_transit|po_8|payout", effect: timing, explanation: "Payout for operations of an earlier period, booked by the bank in this one."}
-        - {discrepancy_id: "t|operation|unbooked|du_won|charge", effect: over, explanation: "Platform returned money it had taken; not booked in the ledger."}
+        - {discrepancy_id: "t|bank|in_transit|po_9|payout", effect: timing, explanation: "Payout booked by the bank after the period end."}
+        - {discrepancy_id: "t|bank|opening_in_transit|po_8|payout", effect: timing, explanation: "Payout of an earlier period, in transit at the period start."}
+        - {discrepancy_id: "t|operation|unbooked_return|du_won|charge", effect: over, explanation: "Platform returned money it had taken; not booked in the ledger."}
+        - {discrepancy_id: "t|operation|fx|EU-R|refund", effect: over, explanation: "Refund in another currency: the platform used the rate of the refund day, the books the original amount."}
+        - {discrepancy_id: "t|operation|fx|EU-S|sale", effect: short, explanation: "Customer paid in another currency; the books likely used another rate."}
         - {discrepancy_id: "t|operation|unbooked|du_lost|charge", effect: short, explanation: "Platform charge not booked in the ledger."}
 
   - name: bank_matches_does_not_match_an_id_prefix
@@ -131,6 +137,8 @@ unit_tests:
           - {dataset: t, payout_id: po_1, paid_on: 2026-09-03, amount_payout: 100.00, amount_lines: 100.00, difference: 0.00}
           - {dataset: t, payout_id: po_10, paid_on: 2026-09-03, amount_payout: 200.00, amount_lines: 200.00, difference: 0.00}
       - input: ref('payouts')
+        rows: []
+      - input: ref('stg_opening')
         rows: []
       - input: ref('deposits')
         rows:
@@ -152,6 +160,8 @@ unit_tests:
           - {dataset: t, payout_id: po_left, paid_on: 2026-09-10, amount_payout: 200.00, amount_lines: 200.00, difference: 0.00}
           - {dataset: t, payout_id: po_right, paid_on: 2026-09-10, amount_payout: 300.00, amount_lines: 300.00, difference: 0.00}
       - input: ref('payouts')
+        rows: []
+      - input: ref('stg_opening')
         rows: []
       - input: ref('deposits')
         rows:
@@ -196,16 +206,19 @@ unit_tests:
         rows:
           - {dataset: t, line_id: P1, payout_id: po_1, key: USD, kind: refund, amount: -98.32, currency: EUR, occurred_on: 2026-10-06, customer_currency: USD}
           - {dataset: t, line_id: P2, payout_id: po_1, key: EUR, kind: refund, amount: -40.00, currency: EUR, occurred_on: 2026-10-06, customer_currency: EUR}
+          - {dataset: t, line_id: P3, payout_id: po_1, key: du_won, kind: charge, amount: 30.85, currency: EUR, occurred_on: 2026-10-14, customer_currency: EUR}
     expect:
       rows:
         - {key: USD, kind: refund, cause: fx, difference: 1.68}
         - {key: EUR, kind: refund, cause: partial, difference: 60.00}
+        - {key: du_won, kind: charge, cause: unbooked_return, difference: 30.85}
 
   - name: bank_matches_payout_of_an_earlier_period_arriving_now
     description: >
-      Demo 1, October: the payout of 30 September reaches the bank on 1 October. It matches its deposit and
-      shows as timing with the deposit amount, not as a deposit without a payout. One that arrived before the
-      period is not a candidate.
+      Demo 1, October: the payouts September left in transit come from September's own output (the opening
+      list). Each was in transit at the start (+ payout); in October it arrives (po_sep), arrives short
+      (po_short), is booked only after the period (po_late) or never (po_lost). A September payout that is
+      not on the list (po_old) is not a candidate, and its deposit is a deposit without a payout.
     model: bank_matches
     overrides:
       vars: {period_start: '2026-10-01', period_end: '2026-10-31', statement_end: '2026-11-07'}
@@ -216,18 +229,37 @@ unit_tests:
           - {dataset: t, payout_id: po_end, paid_on: 2026-11-02, amount_payout: 200.00, amount_lines: 200.00, difference: 0.00}
       - input: ref('payouts')
         rows:
-          - {dataset: t, payout_id: po_sep, paid_on: 2026-10-01, period_from: 2026-09-30, period_to: 2026-09-30, amount: 600.00, currency: EUR}
-          - {dataset: t, payout_id: po_old, paid_on: 2026-09-30, period_from: 2026-09-29, period_to: 2026-09-29, amount: 700.00, currency: EUR}
-          - {dataset: t, payout_id: po_oct, paid_on: 2026-10-02, period_from: 2026-10-01, period_to: 2026-10-01, amount: 100.00, currency: EUR}
-          - {dataset: t, payout_id: po_end, paid_on: 2026-11-02, period_from: 2026-10-30, period_to: 2026-10-30, amount: 200.00, currency: EUR}
+          - {dataset: t, payout_id: po_sep, paid_on: 2026-09-30, period_from: 2026-09-29, period_to: 2026-09-29, amount: 600.00, currency: EUR}
+          - {dataset: t, payout_id: po_short, paid_on: 2026-10-01, period_from: 2026-09-30, period_to: 2026-09-30, amount: 650.00, currency: EUR}
+          - {dataset: t, payout_id: po_late, paid_on: 2026-10-01, period_from: 2026-09-30, period_to: 2026-09-30, amount: 700.00, currency: EUR}
+          - {dataset: t, payout_id: po_lost, paid_on: 2026-10-01, period_from: 2026-09-30, period_to: 2026-09-30, amount: 800.00, currency: EUR}
+          - {dataset: t, payout_id: po_old, paid_on: 2026-09-30, period_from: 2026-09-29, period_to: 2026-09-29, amount: 900.00, currency: EUR}
+      - input: ref('stg_opening')
+        rows:
+          - {dataset: t, level: bank, key: po_sep, kind: payout, cause: in_transit, difference: -600.00, month: '2026-09'}
+          - {dataset: t, level: bank, key: po_short, kind: payout, cause: in_transit, difference: -650.00, month: '2026-09'}
+          - {dataset: t, level: bank, key: po_late, kind: payout, cause: in_transit, difference: -700.00, month: '2026-09'}
+          - {dataset: t, level: bank, key: po_lost, kind: payout, cause: in_transit, difference: -800.00, month: '2026-09'}
+          - {dataset: t, level: operation, key: EU-1, kind: sale, cause: duplicate, difference: -50.00, month: '2026-09'}
       - input: ref('deposits')
         rows:
           - {dataset: t, deposit_id: BK-sep, booked_on: 2026-10-01, amount: 600.00, currency: EUR, reference: STRIPE PAYOUT po_sep}
+          - {dataset: t, deposit_id: BK-short, booked_on: 2026-10-02, amount: 640.00, currency: EUR, reference: STRIPE PAYOUT po_short}
+          - {dataset: t, deposit_id: BK-late, booked_on: 2026-11-03, amount: 700.00, currency: EUR, reference: STRIPE PAYOUT po_late}
+          - {dataset: t, deposit_id: BK-old, booked_on: 2026-10-01, amount: 900.00, currency: EUR, reference: STRIPE PAYOUT po_old}
           - {dataset: t, deposit_id: BK-oct, booked_on: 2026-10-02, amount: 100.00, currency: EUR, reference: STRIPE PAYOUT po_oct}
           - {dataset: t, deposit_id: BK-end, booked_on: 2026-11-02, amount: 200.00, currency: EUR, reference: STRIPE PAYOUT po_end}
     expect:
       rows:
-        - {key: po_sep, cause: in_transit, difference: 600.00}
+        - {key: po_sep, cause: opening_in_transit, difference: 600.00}
+        - {key: po_sep, cause: null, difference: 0.00}
+        - {key: po_short, cause: opening_in_transit, difference: 650.00}
+        - {key: po_short, cause: amount_mismatch, difference: -10.00}
+        - {key: po_late, cause: opening_in_transit, difference: 700.00}
+        - {key: po_late, cause: in_transit, difference: -700.00}
+        - {key: po_lost, cause: opening_in_transit, difference: 800.00}
+        - {key: po_lost, cause: missing_deposit, difference: -800.00}
+        - {key: BK-old, cause: unexpected_deposit, difference: 900.00}
         - {key: po_oct, cause: null, difference: 0.00}
         - {key: po_end, cause: in_transit, difference: -200.00}
 
@@ -241,15 +273,16 @@ unit_tests:
     given:
       - input: ref('stg_opening')
         rows:
-          - {dataset: t, key: EU-1, kind: sale, cause: duplicate, difference: -50.00, month: '2026-09'}
-          - {dataset: t, key: du_1, kind: charge, cause: unbooked, difference: -45.85, month: '2026-09'}
+          - {dataset: t, level: operation, key: EU-1, kind: sale, cause: duplicate, difference: -50.00, month: '2026-09'}
+          - {dataset: t, level: operation, key: du_1, kind: charge, cause: unbooked, difference: -45.85, month: '2026-09'}
+          - {dataset: t, level: bank, key: po_0, kind: payout, cause: in_transit, difference: -3347.78, month: '2026-09'}
       - input: ref('discrepancies')
         rows:
-          - {dataset: t, level: operation, cause: unbooked, key: du_1, kind: charge, difference: 30.85}
+          - {dataset: t, level: operation, cause: unbooked_return, key: du_1, kind: charge, difference: 30.85}
           - {dataset: t, level: operation, cause: fx, key: EU-9, kind: refund, difference: 6.59}
           - {dataset: t, level: bank, cause: in_transit, key: po_1, kind: payout, difference: -3841.55}
     expect:
       rows:
         - {key: EU-1, cause_opening: duplicate, cause_period: null, since: '2026-09', opening: -50.00, period: 0.00, closing: -50.00}
-        - {key: du_1, cause_opening: unbooked, cause_period: unbooked, since: '2026-09', opening: -45.85, period: 30.85, closing: -15.00}
+        - {key: du_1, cause_opening: unbooked, cause_period: unbooked_return, since: '2026-09', opening: -45.85, period: 30.85, closing: -15.00}
         - {key: EU-9, cause_opening: null, cause_period: fx, since: '2026-10', opening: 0.00, period: 6.59, closing: 6.59}

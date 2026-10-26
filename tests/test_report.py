@@ -44,7 +44,7 @@ SQL = (report.ROOT / "dbt" / "models" / "recon" / "discrepancies.sql").read_text
 def test_every_sql_explanation_has_a_russian_translation():
     block = SQL[SQL.index("case cause"):SQL.index("as explanation")]
     explanations = set(re.findall(r"'([A-Z][^']*\.)'", block))
-    assert len(explanations) == 18
+    assert len(explanations) == 19
     assert explanations <= set(report.RU_EXPLANATIONS), explanations - set(report.RU_EXPLANATIONS)
 
 
@@ -247,7 +247,7 @@ def test_rows_that_continue_a_dataset_become_its_month_pages():
 
 def test_month_page_rolls_the_last_month_forward():
     page = report.render_month_page(MONTH, ALL)
-    for text in ("Open at 30 September", "−€95.85", "New in October", "€37.44", "Open at 31 October", "−€58.41",
+    for text in ("Open at 30 September", "−€95.85", "Changes in October", "€37.44", "Open at 31 October", "−€58.41",
                  "€3,347.78", "€8,598.59", "currency rate", "deduction", "September", "−€15.00"):
         assert text in page, text
     start = page.index('<table class="rollforward">')

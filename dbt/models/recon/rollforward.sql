@@ -2,7 +2,7 @@
 -- Roll-forward (demo 1, October): every line the platform and the books disagree on, from the opening list
 -- through this period to its end. Opening is last month's output; period is this month's operation level.
 with opening as (
-    select key, kind, cause, difference, month from {{ ref('stg_opening') }}
+    select key, kind, cause, difference, month from {{ ref('stg_opening') }} where level = 'operation'
 ),
 period as (
     select key, kind, cause, difference from {{ ref('discrepancies') }} where level = 'operation'
