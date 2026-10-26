@@ -1,0 +1,6 @@
+level,cause,key,kind,difference
+bank,in_transit,po_S4EXtePcGlQmEly4DSNOAfkG,payout,-3841.55
+bank,in_transit,po_gTNjfSU3mSW1LXYyuosztMS0,payout,-4757.04
+bank,in_transit,po_x27gpb7ZRNtvZT1aM2xg7hbA,payout,3347.78
+operation,fx,EU-10513,refund,6.59
+operation,unbooked,du_3y5OAl4YzraD5W,charge,30.85

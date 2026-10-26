@@ -94,7 +94,34 @@ def stamp(moment: dt.datetime) -> str:
     return moment.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def generate(out: Path) -> None:
+@dataclass
+class Month:
+    """Everything one month produced, before it is written: the October continuation builds on it."""
+    usd: list[Txn]
+    disputes: list[Txn]
+    txns: list[Txn]
+    payouts: list[dict]
+    ledger: list[dict]
+    truth: list[Truth]
+
+
+def make_payouts(rng: random.Random, txns: list[Txn], ends: list[dt.date]) -> list[dict]:
+    """One payout per weekday in `ends`; each takes the operations whose payout day it is."""
+    payouts = []
+    for end in ends:
+        items = [t for t in txns if payout_day(t.created.date()) == end]
+        payout_id = "po_" + token(rng, 24)
+        arrival = next_weekday(end)
+        for t in items:
+            t.payout_id = payout_id
+            t.available_on = dt.datetime.combine(end, dt.time(23, 59, 59))
+            t.effective_at = dt.datetime.combine(arrival, dt.time())
+        payouts.append({"id": payout_id, "end": end, "arrival": arrival,
+                        "amount": sum((t.net for t in items), Decimal("0.00"))})
+    return payouts
+
+
+def september() -> Month:
     rng = random.Random(SEED)
     september = days(FIRST_DAY, LAST_DAY)
 
@@ -144,17 +171,7 @@ def generate(out: Path) -> None:
     txns = sorted(charges + refunds + disputes, key=lambda t: (t.created, t.txn_id))
     assert all(FIRST_DAY <= t.created.date() <= LAST_DAY for t in txns)
 
-    payouts = []
-    for end in [d for d in september if d.weekday() < 5]:
-        items = [t for t in txns if payout_day(t.created.date()) == end]
-        payout_id = "po_" + token(rng, 24)
-        arrival = next_weekday(end)
-        for t in items:
-            t.payout_id = payout_id
-            t.available_on = dt.datetime.combine(end, dt.time(23, 59, 59))
-            t.effective_at = dt.datetime.combine(arrival, dt.time())
-        payouts.append({"id": payout_id, "end": end, "arrival": arrival,
-                        "amount": sum((t.net for t in items), Decimal("0.00"))})
+    payouts = make_payouts(rng, txns, [d for d in september if d.weekday() < 5])
     in_transit = [p for p in payouts if p["arrival"] > LAST_DAY]
     assert len(in_transit) == 1
 
@@ -194,14 +211,16 @@ def generate(out: Path) -> None:
     for d in disputes:
         truth.append(Truth("operation", "unbooked", d.source_id, "charge", d.net))
     truth.append(Truth("bank", "in_transit", in_transit[0]["id"], "payout", -in_transit[0]["amount"]))
+    return Month(usd, disputes, txns, payouts, ledger, truth)
 
-    ledger.sort(key=lambda e: (e["date"], e["key"], e["kind"], e["amount"]))
+
+def write(out: Path, month: Month, bank: list[tuple]) -> None:
+    """The five files; `bank` holds (date, amount, counterparty, reference) rows."""
+    ledger = sorted(month.ledger, key=lambda e: (e["date"], e["key"], e["kind"], e["amount"]))
     ledger_rows = [[f"JE-{n:05d}", e["key"], e["date"].isoformat(), f"{e['amount']:.2f}", "EUR", e["kind"], "stripe"]
                    for n, e in enumerate(ledger, start=1)]
 
-    bank = [(p["arrival"], p["amount"], COUNTERPARTY, f"STRIPE PAYOUT {p['id']}")
-            for p in payouts if p["arrival"] <= STATEMENT_END] + OTHER_BANK_ROWS
-    bank.sort(key=lambda b: (b[0], b[3]))
+    bank = sorted(bank, key=lambda b: (b[0], b[3]))
     bank_rows = [[f"BK-{n:05d}", day.isoformat(), f"{amount:.2f}", "EUR", party, reference]
                  for n, (day, amount, party, reference) in enumerate(bank, start=1)]
 
@@ -209,12 +228,22 @@ def generate(out: Path) -> None:
         t.txn_id, stamp(t.created), stamp(t.available_on), "eur", f"{t.gross:.2f}", f"{t.fee:.2f}", f"{t.net:.2f}",
         t.category, t.source_id, t.payout_id, stamp(t.effective_at), f"{t.customer_amount:.2f}",
         t.customer_currency, t.order_id,
-    ] for t in txns]
+    ] for t in month.txns]
     payout_rows = [[p["id"], int(p["amount"] * 100), "eur", epoch(p["end"], dt.time(23, 59, 59)),
-                    epoch(p["arrival"], dt.time()), "paid"] for p in payouts]
+                    epoch(p["arrival"], dt.time()), "paid"] for p in month.payouts]
 
     write_csv(out / "stripe_balance.csv", BALANCE_HEADER, balance_rows)
     write_csv(out / "stripe_payouts.csv", PAYOUT_HEADER, payout_rows)
     write_csv(out / "ledger.csv", LEDGER_HEADER, ledger_rows)
     write_csv(out / "bank.csv", BANK_HEADER, bank_rows)
-    write_csv(out / "truth.csv", TRUTH_HEADER, truth_rows(truth))
+    write_csv(out / "truth.csv", TRUTH_HEADER, truth_rows(month.truth))
+
+
+def payout_rows_in_bank(payouts: list[dict], statement_end: dt.date) -> list[tuple]:
+    return [(p["arrival"], p["amount"], COUNTERPARTY, f"STRIPE PAYOUT {p['id']}")
+            for p in payouts if p["arrival"] <= statement_end]
+
+
+def generate(out: Path) -> None:
+    month = september()
+    write(out, month, payout_rows_in_bank(month.payouts, STATEMENT_END) + OTHER_BANK_ROWS)

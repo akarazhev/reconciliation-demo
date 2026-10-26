@@ -4,7 +4,7 @@ import hashlib
 from collections import Counter, defaultdict
 from decimal import Decimal
 
-from generator import eu_shop
+from generator import eu_shop, eu_shop_october
 
 
 def read(path, delimiter=","):
@@ -55,6 +55,78 @@ def test_eu_shop_bank_has_every_arrived_payout_and_other_rows(tmp_path):
     referenced = {r["reference"].removeprefix("STRIPE PAYOUT ") for r in bank if r["counterparty"] == "STRIPE"}
     assert referenced == payout_ids
     assert any(r["counterparty"] != "STRIPE" for r in bank)
+def test_october_is_byte_identical_for_the_same_seed(tmp_path):
+    eu_shop_october.generate(tmp_path / "a")
+    eu_shop_october.generate(tmp_path / "b")
+    assert digest(tmp_path / "a") == digest(tmp_path / "b")
+
+
+def test_october_starts_with_eu_shop_september_row_for_row(tmp_path):
+    eu_shop.generate(tmp_path / "sep")
+    eu_shop_october.generate(tmp_path / "oct")
+    end = dt.datetime(2026, 9, 30, 23, 59, 59, tzinfo=dt.UTC).timestamp()
+
+    def september(name, column):
+        return [r for r in read(tmp_path / "oct" / name) if r[column] <= "2026-09-30 23:59:59"]
+
+    assert september("stripe_balance.csv", "created_utc") == read(tmp_path / "sep" / "stripe_balance.csv")
+    assert september("ledger.csv", "date") == read(tmp_path / "sep" / "ledger.csv")
+    assert september("bank.csv", "booking_date") == [r for r in read(tmp_path / "sep" / "bank.csv")
+                                                     if r["booking_date"] <= "2026-09-30"]
+    assert [p for p in read(tmp_path / "oct" / "stripe_payouts.csv") if int(p["created"]) <= end] \
+        == read(tmp_path / "sep" / "stripe_payouts.csv")
+
+
+def test_october_plants_only_the_month_end_cases(tmp_path):
+    eu_shop.generate(tmp_path / "sep")
+    eu_shop_october.generate(tmp_path / "oct")
+    september = read(tmp_path / "sep" / "truth.csv")
+    october = read(tmp_path / "oct" / "truth.csv")
+    assert Counter((r["level"], r["cause"], r["kind"]) for r in october) == {
+        ("operation", "fx", "refund"): 1, ("operation", "unbooked", "charge"): 1, ("bank", "in_transit", "payout"): 3}
+    won = next(r for r in october if r["cause"] == "unbooked")
+    lost = next(r for r in september if r["key"] == won["key"])
+    assert Decimal(lost["difference"]) + Decimal(won["difference"]) == -eu_shop.DISPUTE_FEE
+    arrived = next(r for r in september if r["cause"] == "in_transit")
+    transit = {r["key"]: Decimal(r["difference"]) for r in october if r["cause"] == "in_transit"}
+    assert transit.pop(arrived["key"]) == -Decimal(arrived["difference"]) > 0
+    assert len(transit) == 2 and all(v < 0 for v in transit.values())
+    refund = next(r for r in october if r["cause"] == "fx")
+    charge = next(r for r in read(tmp_path / "oct" / "stripe_balance.csv")
+                  if r["payment_metadata[order_id]"] == refund["key"] and r["reporting_category"] == "charge")
+    assert charge["created_utc"].startswith("2026-09-") and charge["customer_facing_currency"] == "usd"
+    assert refund["key"] not in {r["key"] for r in september}
+    assert Decimal("0") < Decimal(refund["difference"]) < Decimal(charge["gross"]) / 50
+
+
+def test_october_payouts_equal_their_items_and_two_arrive_in_november(tmp_path):
+    eu_shop_october.generate(tmp_path)
+    items = read(tmp_path / "stripe_balance.csv")
+    payouts = read(tmp_path / "stripe_payouts.csv")
+    sums = defaultdict(Decimal)
+    for r in items:
+        assert r["automatic_payout_id"], r["balance_transaction_id"]
+        sums[r["automatic_payout_id"]] += Decimal(r["net"])
+    assert {p["id"]: Decimal(p["amount"]) / 100 for p in payouts} == dict(sums)
+    october = [p for p in payouts
+               if dt.datetime.fromtimestamp(int(p["created"]), dt.UTC).date() >= dt.date(2026, 10, 1)]
+    arrivals = sorted(dt.datetime.fromtimestamp(int(p["arrival_date"]), dt.UTC).date() for p in october)
+    assert len(october) == 23
+    assert arrivals[-2:] == [dt.date(2026, 11, 2), dt.date(2026, 11, 3)]
+    saturday = {r["automatic_payout_id"] for r in items if r["created_utc"].startswith("2026-10-31")}
+    assert len(saturday) == 1
+    assert {r["reporting_category"] for r in items if r["created_utc"].startswith("2026-10-")} == {
+        "charge", "refund", "dispute_reversal"}
+
+
+def test_october_bank_has_every_arrived_payout(tmp_path):
+    eu_shop_october.generate(tmp_path)
+    bank = read(tmp_path / "bank.csv")
+    referenced = {r["reference"].removeprefix("STRIPE PAYOUT ") for r in bank if r["counterparty"] == "STRIPE"}
+    assert referenced == {p["id"] for p in read(tmp_path / "stripe_payouts.csv")}
+    assert max(r["booking_date"] for r in bank) <= "2026-11-07"
+
+
 from generator import ozon_seller
 
 
