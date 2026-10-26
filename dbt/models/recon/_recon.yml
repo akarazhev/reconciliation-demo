@@ -299,14 +299,20 @@ unit_tests:
 
   - name: unsettled_payouts_follow_the_bank_rules
     description: >
-      Demo 1, October: a payout before the period is settled when the bank level's own rules match it to a deposit
-      before the period: by the id (po_ref) or by a unique amount in the window (po_amt). Named by two deposits
-      (po_amb), with no deposit (po_none) or with one only after the start (po_late), it stays unsettled. A payout
-      of the period itself (po_oct) is not a candidate.
+      Demo 1, October: a payout before the period is settled when the last month's reconciliation, recomputed
+      over that month's statement window (to 7 October here), matches it to a deposit booked before the period: by
+      the id (po_ref) or by a unique amount in the window (po_amt). Named by two deposits (po_amb, or po_edge with
+      the second on 1 October), with no deposit (po_none) or with one only after the start (po_late), it stays
+      unsettled. A deposit after that window (po_far's second, 9 October) does not count. A payout of the period
+      itself (po_oct) is not a candidate.
     model: unsettled_payouts
     overrides:
-      vars: {opening: true, period_start: '2026-10-01', period_end: '2026-10-31', statement_end: '2026-11-07'}
+      vars: {dataset: oct, opening: true, period_start: '2026-10-01', period_end: '2026-10-31', statement_end: '2026-11-07'}
     given:
+      - input: ref('datasets')
+        rows:
+          - {dataset: sep, opening_from: null, statement_end: 2026-10-07}
+          - {dataset: oct, opening_from: sep, statement_end: 2026-11-07}
       - input: ref('payouts')
         rows:
           - {dataset: t, payout_id: po_ref, paid_on: 2026-09-10, period_from: 2026-09-09, period_to: 2026-09-09, amount: 100.00, currency: EUR}
@@ -315,6 +321,8 @@ unit_tests:
           - {dataset: t, payout_id: po_none, paid_on: 2026-09-15, period_from: 2026-09-14, period_to: 2026-09-14, amount: 400.00, currency: EUR}
           - {dataset: t, payout_id: po_late, paid_on: 2026-10-01, period_from: 2026-09-30, period_to: 2026-09-30, amount: 500.00, currency: EUR}
           - {dataset: t, payout_id: po_oct, paid_on: 2026-10-02, period_from: 2026-10-01, period_to: 2026-10-01, amount: 600.00, currency: EUR}
+          - {dataset: t, payout_id: po_edge, paid_on: 2026-09-30, period_from: 2026-09-29, period_to: 2026-09-29, amount: 700.00, currency: EUR}
+          - {dataset: t, payout_id: po_far, paid_on: 2026-09-20, period_from: 2026-09-19, period_to: 2026-09-19, amount: 800.00, currency: EUR}
       - input: ref('deposits')
         rows:
           - {dataset: t, deposit_id: BK-1, booked_on: 2026-09-10, amount: 100.00, currency: EUR, reference: STRIPE PAYOUT po_ref}
@@ -323,8 +331,13 @@ unit_tests:
           - {dataset: t, deposit_id: BK-4, booked_on: 2026-09-15, amount: 300.00, currency: EUR, reference: STRIPE PAYOUT po_amb}
           - {dataset: t, deposit_id: BK-5, booked_on: 2026-10-01, amount: 500.00, currency: EUR, reference: STRIPE PAYOUT po_late}
           - {dataset: t, deposit_id: BK-6, booked_on: 2026-10-02, amount: 600.00, currency: EUR, reference: STRIPE PAYOUT po_oct}
+          - {dataset: t, deposit_id: BK-7, booked_on: 2026-09-30, amount: 700.00, currency: EUR, reference: STRIPE PAYOUT po_edge}
+          - {dataset: t, deposit_id: BK-8, booked_on: 2026-10-01, amount: 700.00, currency: EUR, reference: STRIPE PAYOUT po_edge}
+          - {dataset: t, deposit_id: BK-9, booked_on: 2026-09-20, amount: 800.00, currency: EUR, reference: STRIPE PAYOUT po_far}
+          - {dataset: t, deposit_id: BK-10, booked_on: 2026-10-09, amount: 800.00, currency: EUR, reference: STRIPE PAYOUT po_far}
     expect:
       rows:
+        - {payout_id: po_edge, amount: 700.00}
         - {payout_id: po_amb, amount: 300.00}
         - {payout_id: po_none, amount: 400.00}
         - {payout_id: po_late, amount: 500.00}
