@@ -219,3 +219,48 @@ def test_report_names_no_platform():
     source = (report.ROOT / "report.py").read_text(encoding="utf-8")
     for name in ("Stripe", "Ozon", "Wildberries", "Озон"):
         assert name not in source, name
+
+
+MONTH = {**company("shop/october", "en", "Shop A", ROWS), "opening_from": "shop_set",
+         "period_start": "2026-10-01", "period_end": "2026-10-31",
+         "rollforward": [
+             ("EU-1", "sale", "duplicate", None, "2026-09", Decimal("-50.00"), Decimal("0.00"), Decimal("-50.00")),
+             ("du_1", "charge", "unbooked", "unbooked", "2026-09", Decimal("-45.85"), Decimal("30.85"),
+              Decimal("-15.00")),
+             ("EU-9", "refund", None, "fx", "2026-10", Decimal("0.00"), Decimal("6.59"), Decimal("6.59"))],
+         "totals": {"opening": Decimal("-95.85"), "period": Decimal("37.44"), "closing": Decimal("-58.41"),
+                    "in_transit_opening": Decimal("3347.78"), "in_transit_closing": Decimal("8598.59")}}
+
+
+def test_rows_that_continue_a_dataset_become_its_month_pages():
+    rows = [{"dataset": "a", "opening_from": "", "slug": "a"},
+            {"dataset": "a_oct", "opening_from": "a", "slug": "a/october"},
+            {"dataset": "b", "opening_from": "", "slug": "b"}]
+    companies, months = report.split_months(rows)
+    assert [c["dataset"] for c in companies] == ["a", "b"]
+    assert [m["dataset"] for m in months] == ["a_oct"] and companies[0]["months"] == months
+    assert companies[1]["months"] == []
+    import pytest
+    with pytest.raises(ValueError, match="missing"):
+        report.split_months([{"dataset": "x", "opening_from": "missing", "slug": "x/october"}])
+
+
+def test_month_page_rolls_the_last_month_forward():
+    page = report.render_month_page(MONTH, ALL)
+    for text in ("Open at 30 September", "−€95.85", "New in October", "€37.44", "Open at 31 October", "−€58.41",
+                 "€3,347.78", "€8,598.59", "currency rate", "deduction", "September", "−€15.00"):
+        assert text in page, text
+    start = page.index('<table class="rollforward">')
+    rollforward = page[start:page.index("</table>", start)]
+    assert [int(n) for n in re.findall(r'<td class="num">(\d+)</td>', rollforward)] == [2, 2, 3]
+    assert "<script" not in page.lower() and '<html lang="en">' in page
+
+
+def test_month_page_sits_under_its_company():
+    page = report.render_month_page(MONTH, ALL)
+    assert re.search(r'<a href="../../shop/" aria-current="page">', page)
+    assert 'href="../../favicon.svg"' in page
+    assert '<link rel="canonical" href="https://reconciliation.minihub.app/shop/october/">' in page
+    parent = report.render_company_page({**EU, "months": [MONTH]}, ALL)
+    assert 'href="../shop/october/"' in parent
+    assert 'october/' not in report.render_company_page(RU, ALL)

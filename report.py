@@ -2,6 +2,8 @@
 
     site/index.html, site/ru/index.html   the start page in English and Russian: method and one card per company
     site/<slug>/index.html                one page per company, in its own language: figures, bridge, discrepancies
+    site/<slug>/<month>/index.html        a month that continues a company's dataset (column opening_from): the
+                                          roll-forward from the month before, then the month's own bridge
     site/favicon.svg                      the minihub.app icon
     site/preview-<lang>.png               the link preview of the pages in that language, copied from preview/
     site/sitemap.xml, site/robots.txt     every page for search engines; the two start pages name each other
@@ -11,6 +13,7 @@ platform: a company's address, tab, language, titles and search description come
 new company is a row there, not a change here.
 """
 import csv
+import datetime as dt
 import html
 import shutil
 from decimal import Decimal
@@ -60,7 +63,7 @@ p.lead { max-width: 46rem; margin: 0 0 1rem; color: var(--muted); }
 .figures span { color: var(--muted); font-size: .85rem; }
 .wrap { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: .9rem; }
-table.bridge { max-width: 36rem; }
+table.bridge, table.rollforward, table.timing { max-width: 36rem; }
 th, td { padding: .35rem .6rem; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 tr.total td { font-weight: 600; border-top: 2px solid var(--fg); }
@@ -101,6 +104,22 @@ TEXTS = {
         "preview_alt": "Why payouts don't match the books: ledger €115,824.69, bank €112,327.70, a €3,496.99 "
                        "gap walked level by level.",
         "index_href": "",
+        "next_month": "The next month: what carries over, and why",
+        "month_lead": "The same made-up company a month later. This month's own operations reconcile; what is left "
+                      "at the month end came from last month or crosses the month end.",
+        "rollforward": "Roll-forward: platform minus books",
+        "rollforward_head": ("", "Lines", "Amount"),
+        "open_at": "Open at {day}",
+        "new_in": "New in {month}",
+        "rollforward_note": "Each amount is recomputed from every line of both months and agrees to the cent.",
+        "timing": "Payouts not in the bank yet",
+        "timing_at": "At {day}",
+        "lines": "Lines",
+        "lines_head": ("Key", "Kind", "Found in", "Cause", "Opening", "{month}", "Closing"),
+        "months": ("", "January", "February", "March", "April", "May", "June", "July", "August", "September",
+                   "October", "November", "December"),
+        "months_of": ("", "January", "February", "March", "April", "May", "June", "July", "August", "September",
+                      "October", "November", "December"),
     },
     "ru": {
         "title": "Почему выплата не сходится с учётом — демо сверки",
@@ -130,6 +149,22 @@ TEXTS = {
         "preview_alt": "Почему выплаты маркетплейсов не сходятся с учётом: учёт 511 561,31 ₽, банк 286 950,58 ₽, "
                        "разница разобрана по уровням.",
         "index_href": "ru/",
+        "next_month": "Следующий месяц: что переходит и почему",
+        "month_lead": "Та же выдуманная компания месяцем позже. Операции самого месяца сходятся; всё, что осталось "
+                      "на конец, пришло из прошлого месяца или переходит через его границу.",
+        "rollforward": "Перенос: площадка минус учёт",
+        "rollforward_head": ("", "Строк", "Сумма"),
+        "open_at": "Открыто на {day}",
+        "new_in": "Новое за {month}",
+        "rollforward_note": "Каждая сумма пересчитана по всем строкам обоих месяцев и сходится до копейки.",
+        "timing": "Выплаты, которых ещё нет в банке",
+        "timing_at": "На {day}",
+        "lines": "Строки",
+        "lines_head": ("Ключ", "Вид", "Найдено", "Причина", "Начало", "{month}", "Конец"),
+        "months": ("", "январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь",
+                   "октябрь", "ноябрь", "декабрь"),
+        "months_of": ("", "января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября",
+                      "октября", "ноября", "декабря"),
     },
 }
 
@@ -204,6 +239,19 @@ def datasets() -> list[dict]:
         return list(csv.DictReader(f))
 
 
+def split_months(rows: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Companies, and the months that continue one (opening_from names its dataset); each company gets its
+    `months`. A month whose company is not in the list is an error, not a lost page."""
+    companies = [{**r, "months": []} for r in rows if not r.get("opening_from")]
+    by_dataset = {c["dataset"]: c for c in companies}
+    months = [r for r in rows if r.get("opening_from")]
+    for m in months:
+        if m["opening_from"] not in by_dataset:
+            raise ValueError(f"{m['dataset']}: opening_from names a missing dataset {m['opening_from']}")
+        by_dataset[m["opening_from"]]["months"].append(m)
+    return companies, months
+
+
 def load(dataset: str) -> dict:
     con = duckdb.connect(str(ROOT / "data" / dataset / "recon.duckdb"), read_only=True)
     try:
@@ -215,6 +263,18 @@ def load(dataset: str) -> dict:
     finally:
         con.close()
     return {"bridge": bridge, "discrepancies": rows}
+
+
+def load_month(dataset: str) -> dict:
+    con = duckdb.connect(str(ROOT / "data" / dataset / "recon.duckdb"), read_only=True)
+    try:
+        lines = con.execute(
+            "select key, kind, cause_opening, cause_period, since, opening, period, closing "
+            "from main.rollforward order by since, key, kind").fetchall()
+        totals = dict(con.execute("select label, amount from main.rollforward_totals").fetchall())
+    finally:
+        con.close()
+    return {"rollforward": lines, "totals": totals}
 
 
 def fmt(amount: Decimal, currency: str, lang: str = "en") -> str:
@@ -309,34 +369,91 @@ def figures(company: dict, lang: str) -> str:
     return f'<div class="figures">{cells}</div>'
 
 
-def render_company_page(company: dict, companies: list[dict]) -> str:
-    lang, up = company["lang"], "../"
-    e, cur, t, ru = html.escape, company["currency"], TEXTS[lang], lang == "ru"
+def name_in(lang: str, ru_names: dict, code: str, en_names: dict | None = None) -> str:
+    return ru_names[code] if lang == "ru" else (en_names or {}).get(code, code)
 
-    def name(ru_names: dict, code: str, en_names: dict | None = None) -> str:
-        return ru_names[code] if ru else (en_names or {}).get(code, code)
 
+def bridge_table(company: dict, lang: str) -> str:
+    e, cur, t = html.escape, company["currency"], TEXTS[lang]
     bridge = "".join(
         f'<tr class="{"total" if row_type == "total" else ""}">'
-        f'<td>{e(name(RU_TOTALS, label) if row_type == "total" else "  " + name(RU_CAUSES, label, EN_CAUSES))}</td>'
-        f'<td>{e(name(RU_LEVELS, level) if level else "")}</td><td class="num">{e(fmt(amount, cur, lang))}</td></tr>'
+        f'<td>{e(name_in(lang, RU_TOTALS, label) if row_type == "total" else "  " + name_in(lang, RU_CAUSES, label, EN_CAUSES))}</td>'
+        f'<td>{e(name_in(lang, RU_LEVELS, level) if level else "")}</td><td class="num">{e(fmt(amount, cur, lang))}</td></tr>'
         for _, row_type, level, label, amount in company["bridge"])
-    rows = "".join(
-        f"<tr><td>{e(name(RU_LEVELS, level))}</td><td>{e(name(RU_CAUSES, cause, EN_CAUSES))}</td><td>{e(key)}</td>"
-        f'<td>{e(name(RU_KINDS, kind, EN_KINDS))}</td><td class="num">{e(fmt(diff, cur, lang))}</td>'
-        f"<td>{e(name(RU_EFFECTS, effect))}</td><td>{e(name(RU_EXPLANATIONS, text, EN_EXPLANATIONS))}</td></tr>"
-        for level, cause, key, kind, diff, effect, text in company["discrepancies"])
     bridge_head = "".join(f'<th class="num">{e(h)}</th>' if n == 2 else f"<th>{e(h)}</th>"
                           for n, h in enumerate(t["bridge_head"]))
+    return (f'<h2>{e(t["bridge"])}</h2><div class="wrap"><table class="bridge"><tr>{bridge_head}</tr>{bridge}'
+            f'</table></div>')
+
+
+def discrepancy_table(company: dict, lang: str) -> str:
+    e, cur, t = html.escape, company["currency"], TEXTS[lang]
+    rows = "".join(
+        f"<tr><td>{e(name_in(lang, RU_LEVELS, level))}</td><td>{e(name_in(lang, RU_CAUSES, cause, EN_CAUSES))}</td>"
+        f'<td>{e(key)}</td><td>{e(name_in(lang, RU_KINDS, kind, EN_KINDS))}</td><td class="num">{e(fmt(diff, cur, lang))}</td>'
+        f"<td>{e(name_in(lang, RU_EFFECTS, effect))}</td><td>{e(name_in(lang, RU_EXPLANATIONS, text, EN_EXPLANATIONS))}</td></tr>"
+        for level, cause, key, kind, diff, effect, text in company["discrepancies"])
     rows_head = "".join(f'<th class="num">{e(h)}</th>' if n == 4 else f"<th>{e(h)}</th>"
                         for n, h in enumerate(t["rows_head"]))
+    return f'<h2>{e(t["discrepancies"])}</h2><div class="wrap"><table><tr>{rows_head}</tr>{rows}</table></div>'
+
+
+def render_company_page(company: dict, companies: list[dict]) -> str:
+    lang, up = company["lang"], "../"
+    e, t = html.escape, TEXTS[lang]
+    months = "".join(f'<p class="lead"><a href="{up}{m["slug"]}/">{e(t["next_month"])}</a></p>'
+                     for m in company.get("months", []))
     return (head(lang, company["page_title"], company["page_description"], up, f'{company["slug"]}/')
             + '<nav class="top"><a href="https://minihub.app">minihub.app</a></nav>'
             + tabs(companies, company["slug"], lang, up)
             + f'<h1>{e(title_of(company, lang))}</h1><p class="lead">{e(t["lead_one"])}</p>'
-              f'<p class="lead">{e(t["ledger"])}</p>{figures(company, lang)}'
-              f'<h2>{e(t["bridge"])}</h2><div class="wrap"><table class="bridge"><tr>{bridge_head}</tr>{bridge}</table></div>'
-              f'<h2>{e(t["discrepancies"])}</h2><div class="wrap"><table><tr>{rows_head}</tr>{rows}</table></div>'
+              f'<p class="lead">{e(t["ledger"])}</p>{figures(company, lang)}{months}'
+            + bridge_table(company, lang) + discrepancy_table(company, lang)
+            + tail(lang, up))
+
+
+def render_month_page(month: dict, companies: list[dict]) -> str:
+    """A month that continues a company: where the difference at its end came from, then the month alone."""
+    lang, slug = month["lang"], month["slug"]
+    up = "../" * (slug.count("/") + 1)
+    e, cur, t = html.escape, month["currency"], TEXTS[lang]
+    start, end = dt.date.fromisoformat(month["period_start"]), dt.date.fromisoformat(month["period_end"])
+    day = lambda d: f"{d.day} {t['months_of'][d.month]}"
+    name = t["months"][end.month]
+    lines, totals = month["rollforward"], month["totals"]
+
+    def count(column: int) -> int:
+        return sum(1 for line in lines if line[column] != 0)
+
+    steps = [(t["open_at"].format(day=day(start - dt.timedelta(1))), count(5), totals["opening"], ""),
+             (t["new_in"].format(month=name), count(6), totals["period"], ""),
+             (t["open_at"].format(day=day(end)), count(7), totals["closing"], "total")]
+    rollforward = "".join(f'<tr class="{css}"><td>{e(label)}</td><td class="num">{n}</td>'
+                          f'<td class="num">{e(fmt(amount, cur, lang))}</td></tr>' for label, n, amount, css in steps)
+    timing = "".join(f'<tr><td>{e(t["timing_at"].format(day=day(d)))}</td>'
+                     f'<td class="num">{e(fmt(totals[label], cur, lang))}</td></tr>'
+                     for d, label in ((start - dt.timedelta(1), "in_transit_opening"), (end, "in_transit_closing")))
+    amount = lambda x: fmt(x, cur, lang) if x != 0 else ""
+    rows = "".join(
+        f"<tr><td>{e(key)}</td><td>{e(name_in(lang, RU_KINDS, kind, EN_KINDS))}</td>"
+        f"<td>{e(t['months'][int(since[5:7])])}</td>"
+        f"<td>{e(name_in(lang, RU_CAUSES, cause_opening or cause_period, EN_CAUSES))}</td>"
+        f'<td class="num">{e(amount(opening))}</td><td class="num">{e(amount(period))}</td>'
+        f'<td class="num">{e(fmt(closing, cur, lang))}</td></tr>'
+        for key, kind, cause_opening, cause_period, since, opening, period, closing in lines)
+    head_of = lambda heads, numbers: "".join(f'<th class="num">{e(h)}</th>' if n in numbers else f"<th>{e(h)}</th>"
+                                             for n, h in enumerate(heads))
+    lines_head = head_of([h.format(month=name) for h in t["lines_head"]], (4, 5, 6))
+    return (head(lang, month["page_title"], month["page_description"], up, f"{slug}/")
+            + '<nav class="top"><a href="https://minihub.app">minihub.app</a></nav>'
+            + tabs(companies, slug.rsplit("/", 1)[0], lang, up)
+            + f'<h1>{e(title_of(month, lang))}</h1><p class="lead">{e(t["month_lead"])}</p>'
+              f'<h2>{e(t["rollforward"])}</h2><div class="wrap"><table class="rollforward">'
+              f'<tr>{head_of(t["rollforward_head"], (1, 2))}</tr>{rollforward}</table></div>'
+              f'<p class="lead">{e(t["rollforward_note"])}</p>'
+              f'<h2>{e(t["timing"])}</h2><div class="wrap"><table class="timing">{timing}</table></div>'
+              f'<h2>{e(t["lines"])}</h2><div class="wrap"><table><tr>{lines_head}</tr>{rows}</table></div>'
+            + bridge_table(month, lang) + discrepancy_table(month, lang)
             + tail(lang, up))
 
 
@@ -375,16 +492,15 @@ def sitemap(companies: list[dict], extra: tuple | list = ()) -> str:
 def main() -> None:
     import report_load  # it imports this module; a module-level import would be circular
 
-    companies = []
-    for d in datasets():
-        companies.append({"dataset": d["dataset"], "slug": d["slug"], "tab": d["tab"], "lang": d["lang"],
-                          "title": d["title"], "title_ru": d.get("title_ru") or d["title"],
-                          "page_title": d["page_title"], "page_description": d["page_description"],
-                          "currency": d["currency"], **load(d["dataset"])})
+    rows = [{**d, "title_ru": d.get("title_ru") or d["title"], **load(d["dataset"])} for d in datasets()]
+    companies, months = split_months(rows)
+    for m in months:
+        m.update(load_month(m["dataset"]))
     site = ROOT / "site"
     pages = [(site / "index.html", render_index(companies, "en", report_load.start_block("en"))),
              (site / "ru" / "index.html", render_index(companies, "ru", report_load.start_block("ru")))]
     pages += [(site / c["slug"] / "index.html", render_company_page(c, companies)) for c in companies]
+    pages += [(site / m["slug"] / "index.html", render_month_page(m, companies)) for m in months]
     for path, page in pages:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(page, encoding="utf-8")
@@ -392,7 +508,8 @@ def main() -> None:
     (site / "favicon.svg").write_text(FAVICON, encoding="utf-8")
     for lang in LANG_TAGS:
         shutil.copyfile(ROOT / "preview" / f"{lang}.png", site / f"preview-{lang}.png")
-    (site / "sitemap.xml").write_text(sitemap(companies, report_load.page_paths()), encoding="utf-8")
+    paths = [f"{m['slug']}/" for m in months] + list(report_load.page_paths())
+    (site / "sitemap.xml").write_text(sitemap(companies, paths), encoding="utf-8")
     (site / "robots.txt").write_text(ROBOTS, encoding="utf-8")
 
 
