@@ -37,7 +37,8 @@ Everything is SQL in dbt on DuckDB, amounts are `DECIMAL(18,2)`. There are four 
    that need a human look, FX and amount mismatch.
 2. **Payout.** Each payout against the lines it says it contains.
 3. **Bank.** Each payout against the bank statement, by the payout id in the reference or by a unique amount
-   within five days. A September payout that lands in October is "in transit".
+   within five days. A payout that lands after the month end is "in transit"; the next month counts it
+   when it arrives.
 4. **Bridge.** The differences found on each level must add up exactly from the ledger to the bank. If they
    don't, the run fails.
 
@@ -48,6 +49,26 @@ Everything is SQL in dbt on DuckDB, amounts are `DECIMAL(18,2)`. There are four 
 | EU web shop (Stripe) | 18 | €684.51 | €535.30 | €3,347.78 |
 | Ozon seller | 17 | ₽3,727.75 | ₽12,491.34 | ₽233,374.32 |
 | Wildberries seller | 15 | ₽9,559.65 | ₽8,158.07 | ₽81,521.28 |
+
+## The second month
+
+The EU shop also closes October (`data/eu_shop_october`, page `/stripe/october/`). September is the same, row
+for row; October adds no new errors of its own. What is left on 31 October comes from two places:
+
+- September's discrepancies that nobody fixed. October starts from September's own output, written by
+  `opening.py` to `opening.csv`, not from `truth.csv`.
+- Three cases that cross the month end: a USD charge refunded in October at the October rate, a September
+  dispute won in October (the amount comes back, the €15 fee doesn't), and payouts still on their way to the
+  bank on 30 September and 31 October.
+
+The roll-forward is open on 30 September + new in October = open on 31 October. The run recomputes each of
+these from all the lines of both months and fails if any of them differs.
+
+| | Lines | Amount |
+|---|---:|---:|
+| Open on 30 September | 17 | −€149.21 |
+| New in October | 2 | €37.44 |
+| Open on 31 October | 18 | −€111.77 |
 
 ## Adding a format
 
@@ -70,7 +91,8 @@ each addition:
   - Wildberries, fields of the seller API realization report: `rrd_id`, `realizationreport_id`, `srid`,
     `supplier_oper_name`, `retail_price_withdisc_rub`, `ppvz_for_pay`, `delivery_rub`, `storage_fee`,
     `penalty`, `deduction`.
-- One month and one currency per company, and nothing is on the platform balance on 1 September.
+- One currency per company, and nothing is on the platform balance on 1 September.
+- A refund in another currency is read as a rate difference, never as a partial refund.
 
 ## Load check
 
