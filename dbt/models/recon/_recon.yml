@@ -296,3 +296,71 @@ unit_tests:
         - {key: EU-1, cause_opening: duplicate, cause_period: null, since: '2026-09', opening: -50.00, period: 0.00, closing: -50.00}
         - {key: du_1, cause_opening: unbooked, cause_period: unbooked_return, since: '2026-09', opening: -45.85, period: 30.85, closing: -15.00}
         - {key: EU-9, cause_opening: null, cause_period: fx, since: '2026-10', opening: 0.00, period: 6.59, closing: 6.59}
+
+  - name: unsettled_payouts_follow_the_bank_rules
+    description: >
+      Demo 1, October: a payout before the period is settled when the bank level's own rules match it to a deposit
+      before the period: by the id (po_ref) or by a unique amount in the window (po_amt). Named by two deposits
+      (po_amb), with no deposit (po_none) or with one only after the start (po_late), it stays unsettled. A payout
+      of the period itself (po_oct) is not a candidate.
+    model: unsettled_payouts
+    overrides:
+      vars: {opening: true, period_start: '2026-10-01', period_end: '2026-10-31', statement_end: '2026-11-07'}
+    given:
+      - input: ref('payouts')
+        rows:
+          - {dataset: t, payout_id: po_ref, paid_on: 2026-09-10, period_from: 2026-09-09, period_to: 2026-09-09, amount: 100.00, currency: EUR}
+          - {dataset: t, payout_id: po_amt, paid_on: 2026-09-11, period_from: 2026-09-10, period_to: 2026-09-10, amount: 200.00, currency: EUR}
+          - {dataset: t, payout_id: po_amb, paid_on: 2026-09-14, period_from: 2026-09-11, period_to: 2026-09-13, amount: 300.00, currency: EUR}
+          - {dataset: t, payout_id: po_none, paid_on: 2026-09-15, period_from: 2026-09-14, period_to: 2026-09-14, amount: 400.00, currency: EUR}
+          - {dataset: t, payout_id: po_late, paid_on: 2026-10-01, period_from: 2026-09-30, period_to: 2026-09-30, amount: 500.00, currency: EUR}
+          - {dataset: t, payout_id: po_oct, paid_on: 2026-10-02, period_from: 2026-10-01, period_to: 2026-10-01, amount: 600.00, currency: EUR}
+      - input: ref('deposits')
+        rows:
+          - {dataset: t, deposit_id: BK-1, booked_on: 2026-09-10, amount: 100.00, currency: EUR, reference: STRIPE PAYOUT po_ref}
+          - {dataset: t, deposit_id: BK-2, booked_on: 2026-09-11, amount: 200.00, currency: EUR, reference: STRIPE TRANSFER 0911}
+          - {dataset: t, deposit_id: BK-3, booked_on: 2026-09-14, amount: 300.00, currency: EUR, reference: STRIPE PAYOUT po_amb}
+          - {dataset: t, deposit_id: BK-4, booked_on: 2026-09-15, amount: 300.00, currency: EUR, reference: STRIPE PAYOUT po_amb}
+          - {dataset: t, deposit_id: BK-5, booked_on: 2026-10-01, amount: 500.00, currency: EUR, reference: STRIPE PAYOUT po_late}
+          - {dataset: t, deposit_id: BK-6, booked_on: 2026-10-02, amount: 600.00, currency: EUR, reference: STRIPE PAYOUT po_oct}
+    expect:
+      rows:
+        - {payout_id: po_amb, amount: 300.00}
+        - {payout_id: po_none, amount: 400.00}
+        - {payout_id: po_late, amount: 500.00}
+
+  - name: rollforward_totals_count_every_payout_not_in_the_bank_at_the_end
+    description: >
+      Demo 1, October: the payouts not in the bank at the end are those in transit, missing or ambiguous on the
+      payout side, carried ones included (po_a), so the end of one month is the start of the next.
+    model: rollforward_totals
+    overrides:
+      vars: {opening: true, period_start: '2026-10-01', period_end: '2026-10-31', statement_end: '2026-11-07'}
+    given:
+      - input: ref('stg_stripe__lines')
+        rows: []
+      - input: ref('stg_ledger')
+        rows: []
+      - input: ref('rollforward')
+        rows: []
+      - input: ref('stg_opening')
+        rows:
+          - {dataset: t, level: bank, key: po_a, kind: payout, cause: missing_deposit, difference: -100.00, month: '2026-09'}
+      - input: ref('unsettled_payouts')
+        rows:
+          - {payout_id: po_a, amount: 100.00}
+      - input: ref('discrepancies')
+        rows:
+          - {dataset: t, level: bank, cause: opening_in_transit, key: po_a, kind: payout, amount_payout: 100.00, difference: 100.00}
+          - {dataset: t, level: bank, cause: missing_deposit, key: po_a, kind: payout, amount_payout: 100.00, difference: -100.00}
+          - {dataset: t, level: bank, cause: in_transit, key: po_b, kind: payout, amount_payout: 200.00, difference: -200.00}
+          - {dataset: t, level: bank, cause: ambiguous_deposit, key: po_c, kind: payout, amount_payout: 300.00, difference: -300.00}
+          - {dataset: t, level: bank, cause: ambiguous_deposit, key: BK-1, kind: payout, amount_payout: null, difference: 300.00}
+          - {dataset: t, level: bank, cause: amount_mismatch, key: po_d, kind: payout, amount_payout: 50.00, difference: -1.00}
+    expect:
+      rows:
+        - {step: 1, label: opening, amount: 0.00, amount_check: 0.00}
+        - {step: 2, label: period, amount: 0.00, amount_check: 0.00}
+        - {step: 3, label: closing, amount: 0.00, amount_check: 0.00}
+        - {step: 4, label: in_transit_opening, amount: 100.00, amount_check: 100.00}
+        - {step: 5, label: in_transit_closing, amount: 600.00, amount_check: null}

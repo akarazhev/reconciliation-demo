@@ -1,16 +1,17 @@
 {{ config(enabled = var('opening', false)) }}
 -- The roll-forward in five rows. Opening, period and closing are platform minus books; amount_check recomputes each
 -- from all lines of every month (rollforward_lines_match checks the same line by line). Payouts not yet in the bank:
--- at the start, the opening list against the records, the platform's payouts before the period that no deposit
--- booked before it names (opening_payouts_match_records checks the same payout by payout); at the end, the bank
--- level alone (no check). The test rollforward_balances requires every check to agree.
+-- at the start, the opening list against the records, the platform's payouts before the period that the bank rules
+-- match to no deposit before it (opening_payouts_match_records checks the same payout by payout); at the end, the
+-- bank level alone (no check): every payout in transit, missing or ambiguous, carried ones included, so the end
+-- of one month is the start of the next. The test rollforward_balances requires every check to agree.
 with lines as (
     select occurred_on as on_date, amount from {{ platform_ref('lines') }}
     union all
     select booked_on, -amount from {{ ref('stg_ledger') }}
 ),
 bank as (
-    select cause, difference from {{ ref('discrepancies') }} where level = 'bank'
+    select cause, amount_payout, difference from {{ ref('discrepancies') }} where level = 'bank'
 ),
 unsettled as (
     select amount from {{ ref('unsettled_payouts') }}
@@ -35,7 +36,8 @@ rows as (
            (select sum(amount) from unsettled)
     union all
     select 5, 'in_transit_closing',
-           (select -sum(difference) from bank where cause = 'in_transit'),
+           (select -sum(difference) from bank
+            where amount_payout is not null and cause in ('in_transit', 'missing_deposit', 'ambiguous_deposit')),
            null
 )
 select

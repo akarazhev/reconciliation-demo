@@ -1,6 +1,6 @@
 -- Bank level (spec §5.3): by the payout id in the reference first, then by amount within the
 -- window. Both methods require one candidate on each side; ambiguous references never fall back
--- to amount matching. Difference = bank minus payout.
+-- to amount matching (macros/bank_match.sql). Difference = bank minus payout.
 -- Payouts the month before left out of the bank (in transit, missing or ambiguous; demo 1, October) come from
 -- that month's own output, the opening list, and are matched too, at the amount of the platform's payout record.
 -- Each was not in the bank at the start (+ payout); then it arrives, arrives with another amount, is booked after
@@ -19,48 +19,7 @@ deposits as (
     from {{ ref('deposits') }}
     where booked_on between cast('{{ var("period_start") }}' as date) and cast('{{ var("statement_end") }}' as date)
 ),
-reference_candidates as (
-    select p.payout_id, d.deposit_id
-    from payouts as p
-    join deposits as d on list_contains(regexp_extract_all(d.reference, '[A-Za-z0-9_-]+'), p.payout_id)
-),
-by_reference as (
-    select payout_id, deposit_id
-    from reference_candidates
-    qualify count(*) over (partition by payout_id) = 1
-        and count(*) over (partition by deposit_id) = 1
-),
-payouts_left as (
-    select * from payouts where payout_id not in (select payout_id from reference_candidates)
-),
-deposits_left as (
-    select * from deposits where deposit_id not in (select deposit_id from reference_candidates)
-),
-candidates as (
-    select p.payout_id, d.deposit_id
-    from payouts_left as p
-    join deposits_left as d
-      on d.amount = p.amount
-     and d.booked_on - p.paid_on between 0 and {{ var('deposit_window_days') }}
-),
-payout_candidates as (
-    select payout_id, count(*) as n from candidates group by payout_id
-),
-deposit_candidates as (
-    select deposit_id, count(*) as n from candidates group by deposit_id
-),
-by_amount as (
-    select c.payout_id, c.deposit_id
-    from candidates as c
-    join payout_candidates as pc on pc.payout_id = c.payout_id
-    join deposit_candidates as dc on dc.deposit_id = c.deposit_id
-    where pc.n = 1 and dc.n = 1
-),
-matched as (
-    select * from by_reference
-    union all
-    select * from by_amount
-),
+{{ bank_match_ctes() }},
 rows as (
     select
         p.payout_id as key,
