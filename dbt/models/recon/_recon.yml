@@ -230,3 +230,26 @@ unit_tests:
         - {key: po_sep, cause: in_transit, difference: 600.00}
         - {key: po_oct, cause: null, difference: 0.00}
         - {key: po_end, cause: in_transit, difference: -200.00}
+
+  - name: rollforward_joins_the_opening_list_and_the_period_by_line
+    description: >
+      Demo 1, October: a line open since September stays (EU-1); a September dispute won in October nets to the
+      fee (du_1); a line new in October starts in October (EU-9).
+    model: rollforward
+    overrides:
+      vars: {opening: true, period_start: '2026-10-01', period_end: '2026-10-31', statement_end: '2026-11-07'}
+    given:
+      - input: ref('stg_opening')
+        rows:
+          - {dataset: t, key: EU-1, kind: sale, cause: duplicate, difference: -50.00, month: '2026-09'}
+          - {dataset: t, key: du_1, kind: charge, cause: unbooked, difference: -45.85, month: '2026-09'}
+      - input: ref('discrepancies')
+        rows:
+          - {dataset: t, level: operation, cause: unbooked, key: du_1, kind: charge, difference: 30.85}
+          - {dataset: t, level: operation, cause: fx, key: EU-9, kind: refund, difference: 6.59}
+          - {dataset: t, level: bank, cause: in_transit, key: po_1, kind: payout, difference: -3841.55}
+    expect:
+      rows:
+        - {key: EU-1, cause_opening: duplicate, cause_period: null, since: '2026-09', opening: -50.00, period: 0.00, closing: -50.00}
+        - {key: du_1, cause_opening: unbooked, cause_period: unbooked, since: '2026-09', opening: -45.85, period: 30.85, closing: -15.00}
+        - {key: EU-9, cause_opening: null, cause_period: fx, since: '2026-10', opening: 0.00, period: 6.59, closing: 6.59}

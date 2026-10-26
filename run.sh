@@ -15,8 +15,14 @@ while IFS=, read -r dataset platform currency counterparty period_start period_e
   first="${first:-$dataset:$platform}"
   rm -f "data/$dataset/recon.duckdb" "data/$dataset/recon.duckdb.wal"
   start=$SECONDS
+  # A month that continues another starts from that month's output (column 8): it must be built above.
+  opening=false
+  if [ -n "$opening_from" ]; then
+    uv run python opening.py "$opening_from" "$dataset"
+    opening=true
+  fi
   uv run dbt build --project-dir dbt --profiles-dir dbt --vars "{dataset: $dataset, platform: $platform, \
-period_start: '$period_start', period_end: '$period_end', statement_end: '$statement_end'}"
+period_start: '$period_start', period_end: '$period_end', statement_end: '$statement_end', opening: $opening}"
   echo "$dataset: $((SECONDS - start)) s"
 done < dbt/seeds/datasets.csv
 
