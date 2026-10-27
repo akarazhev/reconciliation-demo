@@ -293,9 +293,9 @@ unit_tests:
           - {dataset: t, level: bank, cause: in_transit, key: po_1, kind: payout, difference: -3841.55}
     expect:
       rows:
-        - {key: EU-1, cause_opening: duplicate, cause_period: null, since: '2026-09', opening: -50.00, period: 0.00, closing: -50.00}
-        - {key: du_1, cause_opening: unbooked, cause_period: unbooked_return, since: '2026-09', opening: -45.85, period: 30.85, closing: -15.00}
-        - {key: EU-9, cause_opening: null, cause_period: fx, since: '2026-10', opening: 0.00, period: 6.59, closing: 6.59}
+        - {key: EU-1, cause_opening: duplicate, cause_period: null, since: '2026-09', opening: -50.00, period: 0.00, closing: -50.00, months_open: 2}
+        - {key: du_1, cause_opening: unbooked, cause_period: unbooked_return, since: '2026-09', opening: -45.85, period: 30.85, closing: -15.00, months_open: 2}
+        - {key: EU-9, cause_opening: null, cause_period: fx, since: '2026-10', opening: 0.00, period: 6.59, closing: 6.59, months_open: 1}
 
   - name: unsettled_payouts_follow_the_bank_rules
     description: >

@@ -224,10 +224,12 @@ def test_report_names_no_platform():
 MONTH = {**company("shop/october", "en", "Shop A", ROWS), "opening_from": "shop_set",
          "period_start": "2026-10-01", "period_end": "2026-10-31",
          "rollforward": [
-             ("EU-1", "sale", "duplicate", None, "2026-09", Decimal("-50.00"), Decimal("0.00"), Decimal("-50.00")),
+             ("EU-1", "sale", "duplicate", None, "2026-09", Decimal("-50.00"), Decimal("0.00"), Decimal("-50.00"), 2),
              ("du_1", "charge", "unbooked", "unbooked", "2026-09", Decimal("-45.85"), Decimal("30.85"),
-              Decimal("-15.00")),
-             ("EU-9", "refund", None, "fx", "2026-10", Decimal("0.00"), Decimal("6.59"), Decimal("6.59"))],
+              Decimal("-15.00"), 2),
+             ("EU-9", "refund", None, "fx", "2026-10", Decimal("0.00"), Decimal("6.59"), Decimal("6.59"), 1),
+             ("EU-0", "sale", "duplicate", "missing_at_platform", "2026-09", Decimal("-10.00"), Decimal("10.00"),
+              Decimal("0.00"), None)],
          "totals": {"opening": Decimal("-95.85"), "period": Decimal("37.44"), "closing": Decimal("-58.41"),
                     "in_transit_opening": Decimal("3347.78"), "in_transit_closing": Decimal("8598.59")}}
 
@@ -252,7 +254,8 @@ def test_month_page_rolls_the_last_month_forward():
         assert text in page, text
     start = page.index('<table class="rollforward">')
     rollforward = page[start:page.index("</table>", start)]
-    assert [int(n) for n in re.findall(r'<td class="num">(\d+)</td>', rollforward)] == [2, 2, 3]
+    # EU-0 closed in October: it counts at the start and among the changes, not at the end
+    assert [int(n) for n in re.findall(r'<td class="num">(\d+)</td>', rollforward)] == [3, 3, 3]
     assert "<script" not in page.lower() and '<html lang="en">' in page
 
 
@@ -264,3 +267,16 @@ def test_month_page_sits_under_its_company():
     parent = report.render_company_page({**EU, "months": [MONTH]}, ALL)
     assert 'href="../shop/october/"' in parent
     assert 'october/' not in report.render_company_page(RU, ALL)
+
+
+def test_month_page_shows_how_long_each_line_is_open():
+    page = report.render_month_page(MONTH, ALL)
+    start = page.index("<h2>Lines</h2>")
+    table = page[start:page.index("</table>", start)]
+    assert '<th class="num">Months open</th>' in table
+    rows = re.findall(r"<tr><td>(EU-[019]|du_1)</td>.*?</tr>", table)
+    assert rows == ["EU-1", "du_1", "EU-9", "EU-0"]
+    cells = {key: re.search(rf"<tr><td>{key}</td>(.*?)</tr>", table).group(1) for key in rows}
+    assert '<td class="num">2</td>' in cells["EU-1"] and '<td class="num">1</td>' in cells["EU-9"]
+    assert '<td class="num"></td>' in cells["EU-0"]
+

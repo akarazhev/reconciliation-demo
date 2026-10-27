@@ -115,7 +115,7 @@ TEXTS = {
         "timing": "Payouts not in the bank yet",
         "timing_at": "At {day}",
         "lines": "Lines",
-        "lines_head": ("Key", "Kind", "Found in", "Cause", "Opening", "{month}", "Closing"),
+        "lines_head": ("Key", "Kind", "Found in", "Months open", "Cause", "Opening", "{month}", "Closing"),
         "months": ("", "January", "February", "March", "April", "May", "June", "July", "August", "September",
                    "October", "November", "December"),
         "months_of": ("", "January", "February", "March", "April", "May", "June", "July", "August", "September",
@@ -160,7 +160,7 @@ TEXTS = {
         "timing": "Выплаты, которых ещё нет в банке",
         "timing_at": "На {day}",
         "lines": "Строки",
-        "lines_head": ("Ключ", "Вид", "Найдено", "Причина", "Начало", "{month}", "Конец"),
+        "lines_head": ("Ключ", "Вид", "Найдено", "Месяцев открыто", "Причина", "Начало", "{month}", "Конец"),
         "months": ("", "январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь",
                    "октябрь", "ноябрь", "декабрь"),
         "months_of": ("", "января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября",
@@ -274,7 +274,7 @@ def load_month(dataset: str) -> dict:
     con = duckdb.connect(str(ROOT / "data" / dataset / "recon.duckdb"), read_only=True)
     try:
         lines = con.execute(
-            "select key, kind, cause_opening, cause_period, since, opening, period, closing "
+            "select key, kind, cause_opening, cause_period, since, opening, period, closing, months_open "
             "from main.rollforward order by since, key, kind").fetchall()
         totals = dict(con.execute("select label, amount from main.rollforward_totals").fetchall())
     finally:
@@ -441,14 +441,14 @@ def render_month_page(month: dict, companies: list[dict]) -> str:
     amount = lambda x: fmt(x, cur, lang) if x != 0 else ""
     rows = "".join(
         f"<tr><td>{e(key)}</td><td>{e(name_in(lang, RU_KINDS, kind, EN_KINDS))}</td>"
-        f"<td>{e(t['months'][int(since[5:7])])}</td>"
+        f"<td>{e(t['months'][int(since[5:7])])}</td><td class=\"num\">{months_open or ''}</td>"
         f"<td>{e(name_in(lang, RU_CAUSES, cause_opening or cause_period, EN_CAUSES))}</td>"
         f'<td class="num">{e(amount(opening))}</td><td class="num">{e(amount(period))}</td>'
         f'<td class="num">{e(fmt(closing, cur, lang))}</td></tr>'
-        for key, kind, cause_opening, cause_period, since, opening, period, closing in lines)
+        for key, kind, cause_opening, cause_period, since, opening, period, closing, months_open in lines)
     head_of = lambda heads, numbers: "".join(f'<th class="num">{e(h)}</th>' if n in numbers else f"<th>{e(h)}</th>"
                                              for n, h in enumerate(heads))
-    lines_head = head_of([h.format(month=name) for h in t["lines_head"]], (4, 5, 6))
+    lines_head = head_of([h.format(month=name) for h in t["lines_head"]], (3, 5, 6, 7))
     return (head(lang, month["page_title"], month["page_description"], up, f"{slug}/")
             + '<nav class="top"><a href="https://minihub.app">minihub.app</a></nav>'
             + tabs(companies, slug.rsplit("/", 1)[0], lang, up)

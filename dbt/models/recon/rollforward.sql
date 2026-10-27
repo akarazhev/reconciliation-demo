@@ -16,6 +16,11 @@ select
     coalesce(o.month, strftime(cast('{{ var("period_end") }}' as date), '%Y-%m')) as since,
     cast(coalesce(o.difference, 0) as decimal(18, 2)) as opening,
     cast(coalesce(p.difference, 0) as decimal(18, 2)) as period,
-    cast(coalesce(o.difference, 0) + coalesce(p.difference, 0) as decimal(18, 2)) as closing
+    cast(coalesce(o.difference, 0) + coalesce(p.difference, 0) as decimal(18, 2)) as closing,
+    -- month-ends a line has stayed open, the month it was found included; an aging list, oldest first
+    case when coalesce(o.difference, 0) + coalesce(p.difference, 0) <> 0
+         then date_diff('month', cast(coalesce(o.month, strftime(cast('{{ var("period_end") }}' as date), '%Y-%m')) || '-01' as date),
+                        cast('{{ var("period_end") }}' as date)) + 1
+    end as months_open
 from opening as o
 full outer join period as p on o.key = p.key and o.kind = p.kind
