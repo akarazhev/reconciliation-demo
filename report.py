@@ -495,7 +495,8 @@ def sitemap(companies: list[dict], extra: tuple | list = ()) -> str:
 
 
 def main() -> None:
-    import report_load  # it imports this module; a module-level import would be circular
+    import free_check  # both import this module; module-level imports would be circular
+    import report_load
 
     rows = [{**d, "title_ru": d.get("title_ru") or d["title"], **load(d["dataset"])} for d in datasets()]
     companies, months = split_months(rows)
@@ -513,7 +514,7 @@ def main() -> None:
     (site / "favicon.svg").write_text(FAVICON, encoding="utf-8")
     for lang in LANG_TAGS:
         shutil.copyfile(ROOT / "preview" / f"{lang}.png", site / f"preview-{lang}.png")
-    paths = [f"{m['slug']}/" for m in months] + list(report_load.page_paths())
+    paths = [f"{m['slug']}/" for m in months] + list(report_load.page_paths()) + free_check.page_paths()
     (site / "sitemap.xml").write_text(sitemap(companies, paths), encoding="utf-8")
     (site / "robots.txt").write_text(ROBOTS, encoding="utf-8")
 

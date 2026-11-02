@@ -43,6 +43,7 @@ while IFS=, read -r dataset relations _; do
 done < dbt/seeds/load/load_datasets.csv
 
 uv run python report_load.py
+uv run python free_check.py
 uv run python report.py
 dataset="${first%%:*}"
 platform="${first##*:}"
